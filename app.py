@@ -1437,11 +1437,11 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
     buffer = BytesIO()
     pdf = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
-    left = 40
-    right = width - 40
+    left = 28
+    right = width - 28
     content_width = right - left
-    top = height - 50
-    bottom = 45
+    top = height - 34
+    bottom = 28
     y = top
 
     pdf.setFillColor(background)
@@ -1582,10 +1582,10 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
     pdf.setFillColor(background)
     pdf.rect(0, 0, width, height, fill=1, stroke=0)
 
-    margin = 32
-    gap = 16
-    top = height - 28
-    bottom = 45
+    margin = 22
+    gap = 14
+    top = height - 22
+    bottom = 28
     total_width = width - (2 * margin)
     left_width = total_width * 0.62
     right_width = total_width - left_width - gap
