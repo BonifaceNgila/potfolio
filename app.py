@@ -397,6 +397,7 @@ PDF_TEMPLATE_THEMES = {
             "hero_text": colors.HexColor("#f8fafc"),
             "border": colors.HexColor("#1d4ed8"),
             "link_color": colors.HexColor("#38bdf8"),
+            "layout": "classic_hero",
         },
     ),
     "One Column - Minimal": _merge_pdf_theme(
@@ -405,6 +406,7 @@ PDF_TEMPLATE_THEMES = {
             "hero_accent": colors.HexColor("#93c5fd"),
             "hero_text": colors.HexColor("#0f172a"),
             "text_color": colors.HexColor("#0f172a"),
+            "layout": "minimal_clean",
         },
     ),
 }
@@ -1470,6 +1472,7 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
     panel_primary = theme.get("panel_primary", colors.HexColor("#0f172a"))
     panel_secondary = theme.get("panel_secondary", colors.HexColor("#0f172a"))
     border_color = theme.get("border", colors.HexColor("#1d4ed8"))
+    layout_style = theme.get("layout", "classic_hero")
 
     buffer = BytesIO()
     pdf = canvas.Canvas(buffer, pagesize=A4)
@@ -1480,54 +1483,102 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
     top = height - 34
     bottom = 28
     y = top
+    on_new_page_callback = None
 
-    pdf.setFillColor(background)
-    pdf.rect(0, 0, width, height, fill=1, stroke=0)
-    hero_height = 120
-    hero_bottom = y - hero_height
-    pdf.setFillColor(hero_background)
-    pdf.roundRect(left - 16, hero_bottom - 8, content_width + 32, hero_height + 16, 20, fill=1, stroke=0)
-    pdf.setFillColor(hero_accent)
-    pdf.rect(left, hero_bottom + hero_height * 0.4, content_width * 0.68, hero_height * 0.5, fill=1, stroke=0)
-    pdf.setFillColor(hero_text_color)
-    pdf.setFont("Helvetica-Bold", 22)
-    pdf.drawString(left + 8, hero_bottom + hero_height - 28, pdf_safe_text(cv.get("full_name", "")))
-    pdf.setFont("Helvetica", 12)
-    pdf.drawString(left + 8, hero_bottom + hero_height - 48, pdf_safe_text(cv.get("headline", "")))
-    pdf.setFont("Helvetica", 10)
-    pdf.drawString(right - 160, hero_bottom + hero_height - 28, pdf_safe_text(f"Location: {cv.get('location', '')}"))
-    pdf.drawString(right - 160, hero_bottom + hero_height - 44, pdf_safe_text(f"Phone: {cv.get('phone', '')}"))
-    pdf.drawString(right - 160, hero_bottom + hero_height - 60, pdf_safe_text(f"Email: {cv.get('email', '')}"))
-    y = hero_bottom - 28
-    pdf.setFillColor(link_color)
-    pdf.drawString(left, y + 8, pdf_safe_text(f"LinkedIn: {cv.get('linkedin', '')} | GitHub: {cv.get('github', '')}"))
-    pdf.setFillColor(text_color)
-    y -= 16
-    pdf.setFillColor(panel_primary)
-    pdf.rect(left - 12, bottom - 6, content_width + 24, y - bottom + 24, fill=1, stroke=0)
-    pdf.setStrokeColor(border_color)
-    pdf.setLineWidth(1)
-    pdf.rect(left - 12, bottom - 6, content_width + 24, y - bottom + 24, fill=0, stroke=1)
-    y -= 12
-    pdf.setFillColor(text_color)
-    y = ensure_pdf_space(pdf, y, 40, bottom, top)
+    if layout_style == "minimal_clean":
+        def draw_minimal_frame() -> None:
+            pdf.setFillColor(background)
+            pdf.rect(0, 0, width, height, fill=1, stroke=0)
+            pdf.setFillColor(theme.get("hero_strip", colors.HexColor("#1e3a5f")))
+            pdf.rect(left - 18, 0, 4, height, fill=1, stroke=0)
+
+        def on_minimal_new_page() -> float:
+            draw_minimal_frame()
+            pdf.setFillColor(text_color)
+            return top - 6
+
+        draw_minimal_frame()
+        pdf.setFillColor(hero_text_color)
+        pdf.setFont("Helvetica-Bold", 30)
+        pdf.drawString(left, y, pdf_safe_text(cv.get("full_name", "")))
+        y -= 34
+        pdf.setFont("Helvetica", 17)
+        pdf.drawString(left, y, pdf_safe_text(cv.get("headline", "")))
+        y -= 28
+        pdf.setFillColor(text_color)
+        pdf.setFont("Helvetica", 14)
+        pdf.drawString(left, y, pdf_safe_text(f"Location: {cv.get('location', '')}"))
+        y -= 24
+        pdf.drawString(left, y, pdf_safe_text(f"Phone: {cv.get('phone', '')}"))
+        y -= 24
+        pdf.drawString(left, y, pdf_safe_text(f"Email: {cv.get('email', '')}"))
+        y -= 28
+        pdf.setFillColor(link_color)
+        pdf.setFont("Helvetica", 13)
+        pdf.drawString(left, y, pdf_safe_text(f"LinkedIn | GitHub"))
+        y -= 24
+        pdf.setFillColor(text_color)
+        on_new_page_callback = on_minimal_new_page
+    else:
+        pdf.setFillColor(background)
+        pdf.rect(0, 0, width, height, fill=1, stroke=0)
+        hero_height = 120
+        hero_bottom = y - hero_height
+        pdf.setFillColor(hero_background)
+        pdf.roundRect(left - 16, hero_bottom - 8, content_width + 32, hero_height + 16, 20, fill=1, stroke=0)
+        pdf.setFillColor(hero_accent)
+        pdf.rect(left, hero_bottom + hero_height * 0.4, content_width * 0.68, hero_height * 0.5, fill=1, stroke=0)
+        pdf.setFillColor(hero_text_color)
+        pdf.setFont("Helvetica-Bold", 22)
+        pdf.drawString(left + 8, hero_bottom + hero_height - 28, pdf_safe_text(cv.get("full_name", "")))
+        pdf.setFont("Helvetica", 12)
+        pdf.drawString(left + 8, hero_bottom + hero_height - 48, pdf_safe_text(cv.get("headline", "")))
+        pdf.setFont("Helvetica", 10)
+        pdf.drawString(right - 160, hero_bottom + hero_height - 28, pdf_safe_text(f"Location: {cv.get('location', '')}"))
+        pdf.drawString(right - 160, hero_bottom + hero_height - 44, pdf_safe_text(f"Phone: {cv.get('phone', '')}"))
+        pdf.drawString(right - 160, hero_bottom + hero_height - 60, pdf_safe_text(f"Email: {cv.get('email', '')}"))
+        y = hero_bottom - 28
+        pdf.setFillColor(link_color)
+        pdf.drawString(left, y + 8, pdf_safe_text(f"LinkedIn: {cv.get('linkedin', '')} | GitHub: {cv.get('github', '')}"))
+        pdf.setFillColor(text_color)
+        y -= 16
+        pdf.setFillColor(panel_primary)
+        pdf.rect(left - 12, bottom - 6, content_width + 24, y - bottom + 24, fill=1, stroke=0)
+        pdf.setStrokeColor(border_color)
+        pdf.setLineWidth(1)
+        pdf.rect(left - 12, bottom - 6, content_width + 24, y - bottom + 24, fill=0, stroke=1)
+        y -= 12
+        pdf.setFillColor(text_color)
+
+    y = ensure_pdf_space(pdf, y, 40, bottom, top, on_new_page=on_new_page_callback)
     y = draw_pdf_title(pdf, "Profile", left, y)
     pdf.setFillColor(text_color)
-    y = draw_pdf_wrapped_text(pdf, cv.get("profile_summary", ""), left, y, content_width, bottom, top)
+    y = draw_pdf_wrapped_text(
+        pdf,
+        cv.get("profile_summary", ""),
+        left,
+        y,
+        content_width,
+        bottom,
+        top,
+        on_new_page=on_new_page_callback,
+    )
     y -= 6
 
-    y = ensure_pdf_space(pdf, y, 40, bottom, top)
+    y = ensure_pdf_space(pdf, y, 40, bottom, top, on_new_page=on_new_page_callback)
     y = draw_pdf_title(pdf, "Core Competencies", left, y)
     pdf.setFillColor(text_color)
     for item in cv.get("core_competencies", []):
-        y = draw_pdf_wrapped_text(pdf, f"- {item}", left, y, content_width, bottom, top)
+        y = draw_pdf_wrapped_text(
+            pdf, f"- {item}", left, y, content_width, bottom, top, on_new_page=on_new_page_callback
+        )
     y -= 6
 
-    y = ensure_pdf_space(pdf, y, 40, bottom, top)
+    y = ensure_pdf_space(pdf, y, 40, bottom, top, on_new_page=on_new_page_callback)
     y = draw_pdf_title(pdf, "Professional Experience", left, y)
     pdf.setFillColor(text_color)
     for exp in cv.get("experience", []):
-        y = ensure_pdf_space(pdf, y, 28, bottom, top)
+        y = ensure_pdf_space(pdf, y, 28, bottom, top, on_new_page=on_new_page_callback)
         y = draw_pdf_wrapped_text(
             pdf,
             f"{exp.get('role', '')} - {exp.get('organization', '')} | {exp.get('period', '')}",
@@ -1539,12 +1590,15 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
             font_name="Helvetica-Bold",
             font_size=10,
             leading=13,
+            on_new_page=on_new_page_callback,
         )
         for bullet in exp.get("bullets", []):
-            y = draw_pdf_wrapped_text(pdf, f"  - {bullet}", left, y, content_width, bottom, top)
+            y = draw_pdf_wrapped_text(
+                pdf, f"  - {bullet}", left, y, content_width, bottom, top, on_new_page=on_new_page_callback
+            )
         y -= 3
 
-    y = ensure_pdf_space(pdf, y, 36, bottom, top)
+    y = ensure_pdf_space(pdf, y, 36, bottom, top, on_new_page=on_new_page_callback)
     y = draw_pdf_title(pdf, "Education", left, y)
     pdf.setFillColor(text_color)
     for item in cv.get("education", []):
@@ -1558,21 +1612,27 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
         entry_line = " - ".join(line_parts) if line_parts else ""
         if entry_line:
             entry_line = f"• {entry_line}"
-        y = draw_pdf_wrapped_text(pdf, entry_line, left, y, content_width, bottom, top)
+        y = draw_pdf_wrapped_text(
+            pdf, entry_line, left, y, content_width, bottom, top, on_new_page=on_new_page_callback
+        )
 
-    y = ensure_pdf_space(pdf, y, 36, bottom, top)
+    y = ensure_pdf_space(pdf, y, 36, bottom, top, on_new_page=on_new_page_callback)
     y = draw_pdf_title(pdf, "Certifications", left, y)
     pdf.setFillColor(text_color)
     for item in cv.get("certifications", []):
-        y = draw_pdf_wrapped_text(pdf, f"- {item}", left, y, content_width, bottom, top)
+        y = draw_pdf_wrapped_text(
+            pdf, f"- {item}", left, y, content_width, bottom, top, on_new_page=on_new_page_callback
+        )
 
-    y = ensure_pdf_space(pdf, y, 36, bottom, top)
+    y = ensure_pdf_space(pdf, y, 36, bottom, top, on_new_page=on_new_page_callback)
     y = draw_pdf_title(pdf, "Languages", left, y)
     pdf.setFillColor(text_color)
     for item in cv.get("languages", []):
-        y = draw_pdf_wrapped_text(pdf, f"- {item}", left, y, content_width, bottom, top)
+        y = draw_pdf_wrapped_text(
+            pdf, f"- {item}", left, y, content_width, bottom, top, on_new_page=on_new_page_callback
+        )
 
-    y = ensure_pdf_space(pdf, y, 42, bottom, top)
+    y = ensure_pdf_space(pdf, y, 42, bottom, top, on_new_page=on_new_page_callback)
     y = draw_pdf_title(pdf, "Referees", left, y)
     pdf.setFillColor(text_color)
     for idx, ref in enumerate(cv.get("referees", []), start=1):
@@ -1592,7 +1652,9 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
         full_line = f"{idx}. {ref_summary}" if ref_summary else f"{idx}."
         if contact_line:
             full_line = f"{full_line} | {contact_line}"
-        y = draw_pdf_wrapped_text(pdf, full_line, left, y, content_width, bottom, top)
+        y = draw_pdf_wrapped_text(
+            pdf, full_line, left, y, content_width, bottom, top, on_new_page=on_new_page_callback
+        )
 
     pdf.save()
     buffer.seek(0)
