@@ -9,6 +9,7 @@ from datetime import datetime
 from io import BytesIO
 
 import streamlit as st
+import streamlit.components.v1 as components
 
 try:
     from reportlab.lib import colors
@@ -43,6 +44,17 @@ def resolve_db_path() -> str:
 
 
 DB_PATH = resolve_db_path()
+
+
+AVAILABLE_TEMPLATES = [
+    "One Column - Classic",
+    "One Column - Minimal",
+    "Two Column - Professional",
+    "Two Column - Sidebar",
+    "Two Column - Sidebar Skillset",
+    "Two Column - Accent Panel",
+    "Two Column - Slate Profile",
+]
 
 
 def default_cv_data() -> dict:
@@ -422,96 +434,13 @@ def text_to_referees(raw: str) -> list[dict]:
     return refs
 
 
-def render_cv_streamlit(cv: dict, layout: str) -> None:
+def render_cv_streamlit(cv: dict, template: str) -> None:
     st.title(cv.get("full_name", ""))
     st.caption(cv.get("headline", ""))
+    st.caption(f"Template: {template}")
 
-    if layout == "Two Column":
-        left, right = st.columns([2, 1])
-        with left:
-            st.header("Profile")
-            st.write(cv.get("profile_summary", ""))
-
-            st.header("Professional Experience")
-            for item in cv.get("experience", []):
-                title = f"{item.get('role', '')} — {item.get('organization', '')} | {item.get('period', '')}"
-                with st.expander(title, expanded=False):
-                    for bullet in item.get("bullets", []):
-                        st.markdown(f"- {bullet}")
-
-            st.header("Education")
-            for item in cv.get("education", []):
-                st.markdown(f"- {item}")
-        with right:
-            st.subheader("Contact")
-            st.markdown(f"**Location:** {cv.get('location', '')}")
-            st.markdown(f"**Phone:** {cv.get('phone', '')}")
-            st.markdown(f"**Email:** {cv.get('email', '')}")
-
-            linkedin = cv.get("linkedin", "").strip()
-            github = cv.get("github", "").strip()
-            if linkedin:
-                st.link_button("LinkedIn", linkedin)
-            if github:
-                st.link_button("GitHub", github)
-
-            st.subheader("Core Competencies")
-            for item in cv.get("core_competencies", []):
-                st.markdown(f"- {item}")
-
-            st.subheader("Certifications")
-            for item in cv.get("certifications", []):
-                st.markdown(f"- {item}")
-
-            st.subheader("Languages")
-            for item in cv.get("languages", []):
-                st.markdown(f"- {item}")
-    else:
-        st.markdown(
-            f"**Location:** {cv.get('location', '')}  \n"
-            f"**Phone:** {cv.get('phone', '')}  \n"
-            f"**Email:** {cv.get('email', '')}"
-        )
-        col1, col2 = st.columns(2)
-        with col1:
-            if cv.get("linkedin", "").strip():
-                st.link_button("LinkedIn", cv.get("linkedin", "").strip())
-        with col2:
-            if cv.get("github", "").strip():
-                st.link_button("GitHub", cv.get("github", "").strip())
-
-        st.header("Profile")
-        st.write(cv.get("profile_summary", ""))
-
-        st.header("Core Competencies")
-        for item in cv.get("core_competencies", []):
-            st.markdown(f"- {item}")
-
-        st.header("Professional Experience")
-        for item in cv.get("experience", []):
-            title = f"{item.get('role', '')} — {item.get('organization', '')} | {item.get('period', '')}"
-            with st.expander(title, expanded=False):
-                for bullet in item.get("bullets", []):
-                    st.markdown(f"- {bullet}")
-
-        st.header("Education")
-        for item in cv.get("education", []):
-            st.markdown(f"- {item}")
-
-        st.header("Certifications")
-        for item in cv.get("certifications", []):
-            st.markdown(f"- {item}")
-
-        st.header("Languages")
-        for item in cv.get("languages", []):
-            st.markdown(f"- {item}")
-
-    st.header("Referees")
-    for index, ref in enumerate(cv.get("referees", []), start=1):
-        st.markdown(
-            f"{index}. **{ref.get('name', '')}** — {ref.get('title', '')}  \n"
-            f"Email: {ref.get('email', '')} | Phone: {ref.get('phone', '')}"
-        )
+    html_output = build_html(cv, template)
+    components.html(html_output, height=1200, scrolling=True)
 
 
 def html_list(items: list[str]) -> str:
@@ -565,10 +494,14 @@ def build_html(cv: dict, template: str) -> str:
         f"<strong>Phone:</strong> {html.escape(cv.get('phone', ''))}<br>"
         f"<strong>Email:</strong> {html.escape(cv.get('email', ''))}</p>"
     )
-    links = (
-        f"<p><a href='{html.escape(cv.get('linkedin', ''))}'>LinkedIn</a> | "
-        f"<a href='{html.escape(cv.get('github', ''))}'>GitHub</a></p>"
-    )
+    linkedin_url = cv.get('linkedin', '').strip()
+    github_url = cv.get('github', '').strip()
+    link_items = []
+    if linkedin_url:
+        link_items.append(f"<a href='{html.escape(linkedin_url)}'>LinkedIn</a>")
+    if github_url:
+        link_items.append(f"<a href='{html.escape(github_url)}'>GitHub</a>")
+    links = f"<p>{' | '.join(link_items)}</p>" if link_items else ""
 
     section_main = f"""
     <h2>Profile</h2><p>{profile}</p>
@@ -582,6 +515,11 @@ def build_html(cv: dict, template: str) -> str:
     <h2>Languages</h2>{html_list(cv.get('languages', []))}
     <h2>Referees</h2>{html_referees(cv.get('referees', []))}
     """
+
+    sidebar_skills = html_list(cv.get('core_competencies', []))
+    sidebar_languages = html_list(cv.get('languages', []))
+    certifications_html = html_list(cv.get('certifications', []))
+    referees_html = html_referees(cv.get('referees', []))
 
     one_column_css = """
     body { font-family: 'Segoe UI', Arial, sans-serif; background: #eaf0f7; margin: 0; padding: 26px; color: #1f2937; }
@@ -652,6 +590,78 @@ def build_html(cv: dict, template: str) -> str:
     .content a { color: #1d4ed8; }
     """
 
+    two_column_sidebar_skillset_css = """
+    body { font-family: 'Inter', 'Segoe UI', sans-serif; margin: 0; background: #f0f2f5; padding: 32px; color: #0f172a; }
+    .cv { max-width: 1120px; margin: auto; background: #ffffff; display: grid; grid-template-columns: 0.95fr 1.7fr; border-radius: 18px; box-shadow: 0 18px 40px rgba(15,23,42,0.18); overflow: hidden; }
+    .sidebar { background: linear-gradient(180deg, #0f172a, #1f2937); color: #f8fafc; padding: 36px 32px; display: flex; flex-direction: column; gap: 14px; min-height: 420px; }
+    .sidebar h1 { margin: 0; font-size: 34px; letter-spacing: 0.5px; }
+    .sidebar .headline { color: #cbd5ff; font-weight: 500; margin-top: 6px; margin-bottom: 12px; }
+    .contact-block { font-size: 13px; line-height: 1.6; }
+    .contact-block strong { display: block; color: #94a3b8; font-size: 10px; letter-spacing: 0.4px; text-transform: uppercase; margin-top: 12px; }
+    .contact-block span { color: #f0f4ff; }
+    .sidebar-section { margin-top: 18px; }
+    .sidebar-section h2 { font-size: 12px; letter-spacing: 0.6px; text-transform: uppercase; color: #94a3b8; margin-bottom: 6px; }
+    .sidebar-section ul { margin: 0; padding-left: 16px; }
+    .sidebar-section li { margin-bottom: 6px; line-height: 1.4; color: #f1f5f9; }
+    .links { margin-top: auto; font-size: 14px; line-height: 1.7; }
+    .links a { color: #60a5fa; text-decoration: none; margin-right: 12px; }
+    .links a:last-child { margin-right: 0; }
+    .content { padding: 36px; display: flex; flex-direction: column; gap: 24px; }
+    .section-block { border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; }
+    .section-block h2 { margin-bottom: 10px; font-size: 22px; color: #0f172a; }
+    .job { margin-bottom: 12px; }
+    .job h4 { margin: 0; }
+    .meta { color: #475569; margin-bottom: 8px; }
+    .referees-list { margin: 0; padding-left: 18px; }
+    .referees-list li { margin-bottom: 8px; }
+    """
+
+    two_column_accent_css = """
+    body { font-family: 'Inter', 'Segoe UI', sans-serif; margin: 0; background: #f5f7fb; padding: 32px; }
+    .cv { max-width: 960px; margin: auto; background: #ffffff; border-radius: 22px; box-shadow: 0 20px 45px rgba(15,23,42,0.25); overflow: hidden; }
+    .hero { background: linear-gradient(135deg, #102a43, #1e3a8a); color: #f8fafc; padding: 36px 40px; display: grid; grid-template-columns: 2fr 1fr; gap: 24px; align-items: end; }
+    .hero h1 { margin: 0; font-size: 36px; letter-spacing: 0.6px; }
+    .hero .headline { margin: 6px 0 0; font-size: 16px; color: #cbd5f5; }
+    .hero-meta { font-size: 14px; line-height: 1.6; }
+    .hero-meta strong { display: block; color: #cbd5f5; text-transform: uppercase; letter-spacing: 0.5px; font-size: 10px; margin-top: 10px; }
+    .hero-links { margin-top: 12px; }
+    .hero-links a { color: #bae6fd; margin-right: 12px; font-weight: 600; text-decoration: none; }
+    .main { padding: 36px; display: grid; grid-template-columns: 1.7fr 0.9fr; gap: 24px; }
+    .main-panel { border-right: 1px solid #e5e7eb; padding-right: 24px; }
+    .aside-panel { padding-left: 24px; }
+    .main-panel h2, .aside-panel h2 { margin-top: 0; color: #0f172a; font-size: 22px; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 14px; }
+    .main-panel .job { margin-bottom: 12px; }
+    .main-panel .meta { color: #475569; margin-bottom: 8px; }
+    .aside-panel ul { margin: 0; padding-left: 18px; line-height: 1.6; }
+    .aside-panel li { margin-bottom: 6px; }
+    """
+
+    two_column_slate_css = """
+    body { font-family: 'Source Sans Pro', 'Segoe UI', sans-serif; margin: 0; background: #eceef1; color: #111827; }
+    .cv { max-width: 1100px; margin: 32px auto; background: #ffffff; border: 1px solid #d1d5da; box-shadow: 0 25px 50px rgba(15,23,42,0.2); }
+    .name-banner { padding: 24px 38px; border-bottom: 1px solid #d6d8dc; display: flex; justify-content: center; }
+    .name-banner h1 { margin: 0; font-size: 34px; letter-spacing: 6px; text-transform: uppercase; color: #111827; }
+    .layout { display: grid; grid-template-columns: 0.95fr 1.55fr; }
+    .sidebar { background: #f1f3f5; padding: 32px 30px; border-right: 1px solid #d6d8dc; display: flex; flex-direction: column; gap: 28px; }
+    .sidebar h3 { margin: 0 0 14px 0; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: #4b5563; }
+    .detail-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 14px; }
+    .detail-label { font-weight: 600; color: #4b5563; }
+    .detail-value { text-align: right; }
+    .sidebar ul { margin: 0; padding-left: 18px; }
+    .sidebar li { margin-bottom: 6px; line-height: 1.5; color: #1f2937; }
+    .sidebar-section { border-top: 1px solid #d6d8dc; padding-top: 18px; }
+    .main-area { padding: 36px 42px; }
+    .main-area h2 { margin-top: 0; font-size: 20px; letter-spacing: 2px; text-transform: uppercase; color: #111827; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; }
+    .summary { font-size: 15px; line-height: 1.7; color: #1f2937; margin-bottom: 24px; }
+    .section-body { margin-top: 18px; }
+    .section-body .job { margin-bottom: 18px; }
+    .section-body h4 { margin: 0; font-size: 16px; color: #111827; }
+    .section-body .meta { font-size: 13px; color: #64748b; margin-top: 4px; }
+    .main-area ul { padding-left: 20px; }
+    .links-row { margin-top: 14px; font-size: 13px; color: #111827; letter-spacing: 0.4px; }
+    .divider { height: 1px; background: #e2e8f0; margin: 32px 0 18px; }
+    """
+
     if template == "One Column - Minimal":
         return f"""
         <html><head><meta charset='UTF-8'><style>{one_column_minimal_css}</style></head>
@@ -707,6 +717,182 @@ def build_html(cv: dict, template: str) -> str:
                 <main class='content'>
                     {section_main}
                 </main>
+            </div>
+        </body></html>
+        """
+
+    if template == "Two Column - Sidebar Skillset":
+        sidebar_contact = f"""
+        <div class='contact-block'>
+            <strong>Location</strong><span>{html.escape(cv.get('location', ''))}</span>
+            <strong>Phone</strong><span>{html.escape(cv.get('phone', ''))}</span>
+            <strong>Email</strong><span>{html.escape(cv.get('email', ''))}</span>
+        </div>
+        """
+        return f"""
+        <html><head><meta charset='UTF-8'><style>{two_column_sidebar_skillset_css}</style></head>
+        <body>
+            <div class='cv'>
+                <aside class='sidebar'>
+                    <h1>{name}</h1>
+                    <p class='headline'>{headline}</p>
+                    {sidebar_contact}
+                    <div class='sidebar-section'>
+                        <h2>Skills</h2>
+                        {sidebar_skills}
+                    </div>
+                    <div class='sidebar-section'>
+                        <h2>Languages</h2>
+                        {sidebar_languages}
+                    </div>
+                    <div class='links'>
+                        {links}
+                    </div>
+                </aside>
+                <main class='content'>
+                    <div class='section-block'>
+                        {section_main}
+                    </div>
+                    <div class='section-block'>
+                        <h2>Certifications</h2>
+                        {certifications_html}
+                    </div>
+                    <div class='section-block'>
+                        <h2>Referees</h2>
+                        {referees_html}
+                    </div>
+                </main>
+            </div>
+        </body></html>
+        """
+
+    if template == "Two Column - Accent Panel":
+        return f"""
+        <html><head><meta charset='UTF-8'><style>{two_column_accent_css}</style></head>
+        <body>
+            <div class='cv'>
+                <div class='hero'>
+                    <div>
+                        <h1>{name}</h1>
+                        <p class='headline'>{headline}</p>
+                    </div>
+                    <div class='hero-meta'>
+                        {contact}
+                        <div class='hero-links'>
+                            {links}
+                        </div>
+                    </div>
+                </div>
+                <div class='main'>
+                    <div class='main-panel'>
+                        {section_main}
+                    </div>
+                    <aside class='aside-panel'>
+                        {section_side}
+                    </aside>
+                </div>
+            </div>
+        </body></html>
+        """
+
+    if template == "Two Column - Slate Profile":
+        contact_fields = [
+            ("Name", cv.get("full_name", "")),
+            ("Address", cv.get("location", "")),
+            ("Phone", cv.get("phone", "")),
+            ("Email", cv.get("email", "")),
+        ]
+        contact_rows = []
+        for label, raw_value in contact_fields:
+            if str(raw_value).strip():
+                contact_rows.append(
+                    """
+                    <div class='detail-row'>
+                        <span class='detail-label'>{label}</span>
+                        <span class='detail-value'>{value}</span>
+                    </div>
+                    """.format(label=label, value=html.escape(str(raw_value)))
+                )
+        personal_details_html = "".join(contact_rows)
+
+        competencies = cv.get("core_competencies", [])
+        skills_entries = competencies[:6] if competencies else []
+        if not skills_entries:
+            skills_entries = cv.get("languages", [])
+        skills_html = html_list(skills_entries)
+        technical_entries = competencies[6:]
+        tech_html = html_list(technical_entries)
+        education_html = html_list(cv.get("education", []))
+        languages_html = html_list(cv.get("languages", []))
+        links_row = f"<div class='links-row'>{' | '.join(link_items)}</div>" if link_items else ""
+
+        education_section = (
+            f"""
+            <div class='sidebar-section'>
+                <h3>Education</h3>
+                {education_html}
+            </div>
+            """ if education_html else ""
+        )
+        skills_section = (
+            f"""
+            <div class='sidebar-section'>
+                <h3>Skills</h3>
+                {skills_html}
+            </div>
+            """ if skills_html else ""
+        )
+        tech_section = (
+            f"""
+            <div class='sidebar-section'>
+                <h3>Technical Proficiencies</h3>
+                {tech_html}
+            </div>
+            """ if tech_html else ""
+        )
+        languages_section = (
+            f"""
+            <div class='sidebar-section'>
+                <h3>Languages</h3>
+                {languages_html}
+            </div>
+            """ if languages_html else ""
+        )
+
+        return f"""
+        <html><head><meta charset='UTF-8'><style>{two_column_slate_css}</style></head>
+        <body>
+            <div class='cv'>
+                <div class='name-banner'>
+                    <h1>{name}</h1>
+                </div>
+                <div class='layout'>
+                    <aside class='sidebar'>
+                        <div class='sidebar-section'>
+                            <h3>Personal Details</h3>
+                            {personal_details_html}
+                            {links_row}
+                        </div>
+                        {education_section}
+                        {skills_section}
+                        {tech_section}
+                        {languages_section}
+                    </aside>
+                    <div class='main-area'>
+                        <div class='summary'>
+                            <p>{profile}</p>
+                        </div>
+                        <div class='section-body'>
+                            <h2>Work Experience</h2>
+                            {html_experience(cv.get('experience', []))}
+                        </div>
+                        <div class='divider'></div>
+                        <div class='section-body'>
+                            <h2>Courses and Certificates</h2>
+                            {html_list(cv.get('certifications', []))}
+                        </div>
+                    </div>
+                </div>
             </div>
         </body></html>
         """
@@ -1183,12 +1369,7 @@ def download_section(cv: dict, suggested_name: str) -> None:
     st.subheader("Download CV")
     template = st.selectbox(
         "Select template",
-        [
-            "One Column - Classic",
-            "One Column - Minimal",
-            "Two Column - Professional",
-            "Two Column - Sidebar",
-        ],
+        AVAILABLE_TEMPLATES,
     )
     html_output = build_html(cv, template)
     pdf_output = build_pdf(cv, template) if REPORTLAB_AVAILABLE else b""
@@ -1267,9 +1448,9 @@ if page == "Public View":
         st.error("No default profile found. Create one in Editor.")
         st.stop()
 
-    layout_choice = st.selectbox("Display Layout", ["One Column", "Two Column"], index=0)
+    template_choice = st.selectbox("Display Template", AVAILABLE_TEMPLATES, index=0)
     st.caption(f"Showing default CV: {default_version['version_name']}")
-    render_cv_streamlit(default_version["cv"], layout_choice)
+    render_cv_streamlit(default_version["cv"], template_choice)
     st.divider()
     download_section(default_version["cv"], "default_cv")
 
@@ -1321,9 +1502,9 @@ else:
     selected_version_meta = version_options[selected_version_label]
     selected_version = fetch_version(selected_version_meta["id"])
 
-    preview_layout = st.selectbox("Preview Layout", ["One Column", "Two Column"], index=0)
+    preview_template = st.selectbox("Preview Template", AVAILABLE_TEMPLATES, index=0)
     st.subheader("Preview")
-    render_cv_streamlit(selected_version["cv"], preview_layout)
+    render_cv_streamlit(selected_version["cv"], preview_template)
     st.divider()
     download_section(selected_version["cv"], selected_profile["name"].replace(" ", "_"))
     st.divider()

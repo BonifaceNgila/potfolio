@@ -28,7 +28,7 @@ The app will open in your browser.
 
 ## How it works
 
-- **Public View:** Displays the current default profile CV.
+- **Public View:** Displays the current default profile CV and lets visitors preview it with every downloadable template.
 - **Editor:** Create and manage profiles, set default profile, edit CV fields, and save multiple versions.
 - **Database:** Uses SQLite (`cv_portfolio.db`) created automatically on first run.
 
@@ -53,6 +53,9 @@ You can download CVs as both HTML and PDF in these templates:
 - One Column - Minimal
 - Two Column - Professional
 - Two Column - Sidebar
+- Two Column - Sidebar Skillset
+- Two Column - Accent Panel
+- Two Column - Slate Profile
 
 ## Editing format notes
 
