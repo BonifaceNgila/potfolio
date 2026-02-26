@@ -1691,6 +1691,26 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
         pdf.setFillColor(text_color)
         on_new_page_callback = on_minimal_new_page
     else:
+        def on_classic_new_page() -> float:
+            pdf.setFillColor(background)
+            pdf.rect(0, 0, width, height, fill=1, stroke=0)
+
+            ribbon_height = 26
+            ribbon_bottom = top - ribbon_height
+            pdf.setFillColor(hero_background)
+            pdf.roundRect(left - 12, ribbon_bottom, content_width + 24, ribbon_height, 10, fill=1, stroke=0)
+            pdf.setFillColor(hero_accent)
+            pdf.rect(left, ribbon_bottom + 5, content_width * 0.56, ribbon_height - 10, fill=1, stroke=0)
+
+            y_start = ribbon_bottom - 16
+            pdf.setFillColor(panel_primary)
+            pdf.rect(left - 12, bottom - 6, content_width + 24, y_start - bottom + 24, fill=1, stroke=0)
+            pdf.setStrokeColor(border_color)
+            pdf.setLineWidth(1)
+            pdf.rect(left - 12, bottom - 6, content_width + 24, y_start - bottom + 24, fill=0, stroke=1)
+            pdf.setFillColor(text_color)
+            return y_start - 8
+
         pdf.setFillColor(background)
         pdf.rect(0, 0, width, height, fill=1, stroke=0)
         hero_height = 120
@@ -1720,6 +1740,7 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
         pdf.rect(left - 12, bottom - 6, content_width + 24, y - bottom + 24, fill=0, stroke=1)
         y -= 12
         pdf.setFillColor(text_color)
+        on_new_page_callback = on_classic_new_page
 
     y = ensure_pdf_space(pdf, y, 40, bottom, top, on_new_page=on_new_page_callback)
     y = draw_pdf_section_title(
