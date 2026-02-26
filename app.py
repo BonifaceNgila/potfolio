@@ -1929,12 +1929,9 @@ def cv_editor(profile_id: int, selected_version: dict) -> None:
                 st.rerun()
 
 
-def download_section(cv: dict, suggested_name: str) -> None:
+def download_section(cv: dict, suggested_name: str, template: str) -> None:
     st.subheader("Download CV")
-    template = st.selectbox(
-        "Select template",
-        AVAILABLE_TEMPLATES,
-    )
+    st.caption(f"Download template: {template}")
     html_output = build_html(cv, template)
     pdf_output = build_pdf(cv, template) if REPORTLAB_AVAILABLE else b""
     slug = template.lower().replace(" ", "_").replace("-", "")
@@ -2016,7 +2013,7 @@ if page == "Public View":
     st.caption(f"Showing default CV: {default_version['version_name']}")
     render_cv_streamlit(default_version["cv"], template_choice)
     st.divider()
-    download_section(default_version["cv"], "default_cv")
+    download_section(default_version["cv"], "default_cv", template_choice)
 
 else:
     if not st.session_state.get("editor_authenticated", False):
@@ -2070,6 +2067,6 @@ else:
     st.subheader("Preview")
     render_cv_streamlit(selected_version["cv"], preview_template)
     st.divider()
-    download_section(selected_version["cv"], selected_profile["name"].replace(" ", "_"))
+    download_section(selected_version["cv"], selected_profile["name"].replace(" ", "_"), preview_template)
     st.divider()
     cv_editor(selected_profile["id"], selected_version)
