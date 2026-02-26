@@ -431,10 +431,11 @@ def text_to_experience(raw: str) -> list[dict]:
 def education_to_text(education: list[dict]) -> str:
     lines = []
     for item in education:
+        record = normalize_education_record(item)
         parts = [
-            item.get("course", ""),
-            item.get("institution", ""),
-            item.get("timeline", ""),
+            record.get("course", ""),
+            record.get("institution", ""),
+            record.get("timeline", ""),
         ]
         lines.append(" || ".join(parts))
     return "\n".join(lines)
@@ -527,12 +528,23 @@ def html_experience(experience: list[dict]) -> str:
     return "".join(chunks)
 
 
+def normalize_education_record(item) -> dict:
+    if isinstance(item, dict):
+        return item
+    if isinstance(item, str):
+        return {"course": item, "institution": "", "timeline": ""}
+    return {"course": "", "institution": "", "timeline": ""}
+
+
 def html_education(education: list[dict]) -> str:
     entries = []
     for item in education:
-        course = html.escape(item.get("course", ""))
-        institution = html.escape(item.get("institution", ""))
-        timeline = html.escape(item.get("timeline", ""))
+        record = normalize_education_record(item)
+        course = html.escape(record.get("course", ""))
+        institution = html.escape(record.get("institution", ""))
+        timeline = html.escape(record.get("timeline", ""))
+        if not any([course, institution, timeline]):
+            continue
         entries.append(
             f"""
             <div class=\"education-entry\">
@@ -1260,9 +1272,10 @@ def build_pdf_one_column(cv: dict) -> bytes:
     y = ensure_pdf_space(pdf, y, 36, bottom, top)
     y = draw_pdf_title(pdf, "Education", left, y)
     for item in cv.get("education", []):
-        course = item.get("course", "")
-        institution = item.get("institution", "")
-        timeline = item.get("timeline", "")
+        record = normalize_education_record(item)
+        course = record.get("course", "")
+        institution = record.get("institution", "")
+        timeline = record.get("timeline", "")
         line_parts = [part for part in [course, institution] if part]
         if timeline:
             line_parts.append(f"({timeline})")
@@ -1398,9 +1411,10 @@ def build_pdf_two_column(cv: dict) -> bytes:
 
     y_left = draw_pdf_title(pdf, "Education", left_x, y_left)
     for item in cv.get("education", []):
-        course = item.get("course", "")
-        institution = item.get("institution", "")
-        timeline = item.get("timeline", "")
+        record = normalize_education_record(item)
+        course = record.get("course", "")
+        institution = record.get("institution", "")
+        timeline = record.get("timeline", "")
         parts = [part for part in [course, institution] if part]
         if timeline:
             parts.append(f"({timeline})")
