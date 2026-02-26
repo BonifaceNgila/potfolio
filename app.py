@@ -1641,60 +1641,54 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
         start_y = panel_top - 16
         return start_y, start_y
 
-    def on_new_page_left() -> float:
-        start_left, _ = draw_page_layout(first_page=False)
-        return start_left
+    def add_title_op(ops: list[dict], title: str) -> None:
+        ops.append({"kind": "title", "title": title, "height": 16})
 
-    def on_new_page_right() -> float:
-        _, start_right = draw_page_layout(first_page=False)
-        return start_right
+    def add_gap_op(ops: list[dict], gap_size: int) -> None:
+        if gap_size > 0:
+            ops.append({"kind": "gap", "height": gap_size})
 
-    y_left, y_right = draw_page_layout(first_page=True)
+    def add_text_ops(
+        ops: list[dict],
+        text: str,
+        max_width: float,
+        font_name: str = "Helvetica",
+        font_size: int = 10,
+        leading: int = 13,
+    ) -> None:
+        safe_text = pdf_safe_text(text)
+        for line in wrap_pdf_text(safe_text, font_name, font_size, max_width):
+            ops.append(
+                {
+                    "kind": "line",
+                    "text": line,
+                    "font_name": font_name,
+                    "font_size": font_size,
+                    "leading": leading,
+                    "height": leading,
+                }
+            )
 
-    y_left = ensure_pdf_space(pdf, y_left, 32, bottom, top, on_new_page=on_new_page_left)
-    y_left = draw_pdf_title(pdf, "Profile", left_x, y_left)
-    pdf.setFillColor(text_color)
-    y_left = draw_pdf_wrapped_text(
-        pdf, cv.get("profile_summary", ""), left_x, y_left, left_width, bottom, top, on_new_page=on_new_page_left
-    )
-    y_left -= 6
+    left_ops: list[dict] = []
+    add_title_op(left_ops, "Profile")
+    add_text_ops(left_ops, cv.get("profile_summary", ""), left_width, font_name="Helvetica", font_size=10, leading=13)
+    add_gap_op(left_ops, 6)
 
-    y_left = ensure_pdf_space(pdf, y_left, 36, bottom, top, on_new_page=on_new_page_left)
-    y_left = draw_pdf_title(pdf, "Professional Experience", left_x, y_left)
-    pdf.setFillColor(text_color)
+    add_title_op(left_ops, "Professional Experience")
     for exp in cv.get("experience", []):
-        y_left = draw_pdf_wrapped_text(
-            pdf,
+        add_text_ops(
+            left_ops,
             f"{exp.get('role', '')} - {exp.get('organization', '')} | {exp.get('period', '')}",
-            left_x,
-            y_left,
             left_width,
-            bottom,
-            top,
             font_name="Helvetica-Bold",
             font_size=9,
             leading=12,
-            on_new_page=on_new_page_left,
         )
         for bullet in exp.get("bullets", []):
-            y_left = draw_pdf_wrapped_text(
-                pdf,
-                f"- {bullet}",
-                left_x,
-                y_left,
-                left_width,
-                bottom,
-                top,
-                font_name="Helvetica",
-                font_size=9,
-                leading=12,
-                on_new_page=on_new_page_left,
-            )
-        y_left -= 3
+            add_text_ops(left_ops, f"- {bullet}", left_width, font_name="Helvetica", font_size=9, leading=12)
+        add_gap_op(left_ops, 3)
 
-    y_left = ensure_pdf_space(pdf, y_left, 36, bottom, top, on_new_page=on_new_page_left)
-    y_left = draw_pdf_title(pdf, "Education", left_x, y_left)
-    pdf.setFillColor(text_color)
+    add_title_op(left_ops, "Education")
     for item in cv.get("education", []):
         record = normalize_education_record(item)
         course = record.get("course", "")
@@ -1705,14 +1699,10 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
             parts.append(f"({timeline})")
         entry_line = " - ".join(parts) if parts else ""
         if entry_line:
-            entry_line = f"• {entry_line}"
-            y_left = draw_pdf_wrapped_text(
-                pdf, entry_line, left_x, y_left, left_width, bottom, top, on_new_page=on_new_page_left
-            )
+            add_text_ops(left_ops, f"• {entry_line}", left_width, font_name="Helvetica", font_size=10, leading=13)
 
-    y_right = ensure_pdf_space(pdf, y_right, 32, bottom, top, on_new_page=on_new_page_right)
-    y_right = draw_pdf_title(pdf, "Contact", right_x, y_right)
-    pdf.setFillColor(text_color)
+    right_ops: list[dict] = []
+    add_title_op(right_ops, "Contact")
     contact_lines = [
         f"Location: {cv.get('location', '')}",
         f"Phone: {cv.get('phone', '')}",
@@ -1721,77 +1711,25 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
         f"GitHub: {cv.get('github', '')}",
     ]
     for line in contact_lines:
-        y_right = draw_pdf_wrapped_text(
-            pdf,
-            line,
-            right_x,
-            y_right,
-            right_width,
-            bottom,
-            top,
-            font_size=9,
-            leading=12,
-            on_new_page=on_new_page_right,
-        )
-    y_right -= 6
+        add_text_ops(right_ops, line, right_width, font_name="Helvetica", font_size=9, leading=12)
+    add_gap_op(right_ops, 6)
 
-    y_right = ensure_pdf_space(pdf, y_right, 30, bottom, top, on_new_page=on_new_page_right)
-    y_right = draw_pdf_title(pdf, "Core Competencies", right_x, y_right)
-    pdf.setFillColor(text_color)
+    add_title_op(right_ops, "Core Competencies")
     for item in cv.get("core_competencies", []):
-        y_right = draw_pdf_wrapped_text(
-            pdf,
-            f"- {item}",
-            right_x,
-            y_right,
-            right_width,
-            bottom,
-            top,
-            font_size=9,
-            leading=12,
-            on_new_page=on_new_page_right,
-        )
-    y_right -= 4
+        add_text_ops(right_ops, f"- {item}", right_width, font_name="Helvetica", font_size=9, leading=12)
+    add_gap_op(right_ops, 4)
 
-    y_right = ensure_pdf_space(pdf, y_right, 28, bottom, top, on_new_page=on_new_page_right)
-    y_right = draw_pdf_title(pdf, "Certifications", right_x, y_right)
-    pdf.setFillColor(text_color)
+    add_title_op(right_ops, "Certifications")
     for item in cv.get("certifications", []):
-        y_right = draw_pdf_wrapped_text(
-            pdf,
-            f"- {item}",
-            right_x,
-            y_right,
-            right_width,
-            bottom,
-            top,
-            font_size=9,
-            leading=12,
-            on_new_page=on_new_page_right,
-        )
-    y_right -= 4
+        add_text_ops(right_ops, f"- {item}", right_width, font_name="Helvetica", font_size=9, leading=12)
+    add_gap_op(right_ops, 4)
 
-    y_right = ensure_pdf_space(pdf, y_right, 24, bottom, top, on_new_page=on_new_page_right)
-    y_right = draw_pdf_title(pdf, "Languages", right_x, y_right)
-    pdf.setFillColor(text_color)
+    add_title_op(right_ops, "Languages")
     for item in cv.get("languages", []):
-        y_right = draw_pdf_wrapped_text(
-            pdf,
-            f"- {item}",
-            right_x,
-            y_right,
-            right_width,
-            bottom,
-            top,
-            font_size=9,
-            leading=12,
-            on_new_page=on_new_page_right,
-        )
-    y_right -= 4
+        add_text_ops(right_ops, f"- {item}", right_width, font_name="Helvetica", font_size=9, leading=12)
+    add_gap_op(right_ops, 4)
 
-    y_right = ensure_pdf_space(pdf, y_right, 40, bottom, top, on_new_page=on_new_page_right)
-    y_right = draw_pdf_title(pdf, "Referees", right_x, y_right)
-    pdf.setFillColor(text_color)
+    add_title_op(right_ops, "Referees")
     for ref in cv.get("referees", []):
         name = ref.get("name", "")
         position = ref.get("position") or ref.get("title", "")
@@ -1810,18 +1748,42 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
         if contact_line:
             text = f"{text} | {contact_line}" if text else contact_line
         if text:
-            y_right = draw_pdf_wrapped_text(
-                pdf,
-                f"- {text}",
-                right_x,
-                y_right,
-                right_width,
-                bottom,
-                top,
-                font_size=9,
-                leading=12,
-                on_new_page=on_new_page_right,
-            )
+            add_text_ops(right_ops, f"- {text}", right_width, font_name="Helvetica", font_size=9, leading=12)
+
+    def render_op(op: dict, x: float, y: float) -> float:
+        if op["kind"] == "title":
+            return draw_pdf_title(pdf, op["title"], x, y)
+        if op["kind"] == "line":
+            pdf.setFillColor(text_color)
+            pdf.setFont(op["font_name"], op["font_size"])
+            pdf.drawString(x, y, op["text"])
+            return y - op["leading"]
+        return y - op["height"]
+
+    left_index = 0
+    right_index = 0
+    y_left, y_right = draw_page_layout(first_page=True)
+
+    while left_index < len(left_ops) or right_index < len(right_ops):
+        while left_index < len(left_ops):
+            op = left_ops[left_index]
+            if y_left - op["height"] < bottom:
+                break
+            y_left = render_op(op, left_x, y_left)
+            left_index += 1
+
+        while right_index < len(right_ops):
+            op = right_ops[right_index]
+            if y_right - op["height"] < bottom:
+                break
+            y_right = render_op(op, right_x, y_right)
+            right_index += 1
+
+        if left_index >= len(left_ops) and right_index >= len(right_ops):
+            break
+
+        pdf.showPage()
+        y_left, y_right = draw_page_layout(first_page=False)
 
     pdf.save()
     buffer.seek(0)
