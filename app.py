@@ -58,13 +58,7 @@ AVAILABLE_TEMPLATES = [
 ]
 
 DISPLAY_TEMPLATE_OPTIONS = {
-    "One Column • Classic": "One Column - Classic",
-    "One Column • Minimal": "One Column - Minimal",
-    "Two Column • Professional": "Two Column - Professional",
-    "Two Column • Sidebar": "Two Column - Sidebar",
-    "Two Column • Sidebar Skillset": "Two Column - Sidebar Skillset",
-    "Two Column • Accent Panel": "Two Column - Accent Panel",
-    "Two Column • Slate Profile": "Two Column - Slate Profile",
+    template.replace(" - ", " • "): template for template in AVAILABLE_TEMPLATES
 }
 
 
@@ -422,7 +416,31 @@ PDF_TEMPLATE_THEMES = {
 }
 
 
-DISPLAY_TO_PDF_TEMPLATE_MAP = {template: template for template in AVAILABLE_TEMPLATES}
+DISPLAY_TO_PDF_TEMPLATE_MAP = {template: template for template in DISPLAY_TEMPLATE_OPTIONS.values()}
+
+
+def validate_template_mappings() -> list[str]:
+    issues: list[str] = []
+    display_templates = set(DISPLAY_TEMPLATE_OPTIONS.values())
+    available_templates = set(AVAILABLE_TEMPLATES)
+
+    missing_in_selector = sorted(available_templates - display_templates)
+    if missing_in_selector:
+        issues.append(f"Missing selector entries: {', '.join(missing_in_selector)}")
+
+    extra_in_selector = sorted(display_templates - available_templates)
+    if extra_in_selector:
+        issues.append(f"Unknown selector entries: {', '.join(extra_in_selector)}")
+
+    missing_pdf_themes = sorted(display_templates - set(PDF_TEMPLATE_THEMES.keys()))
+    if missing_pdf_themes:
+        issues.append(f"Missing PDF theme mappings: {', '.join(missing_pdf_themes)}")
+
+    missing_pdf_map = sorted(display_templates - set(DISPLAY_TO_PDF_TEMPLATE_MAP.keys()))
+    if missing_pdf_map:
+        issues.append(f"Missing display-to-PDF mappings: {', '.join(missing_pdf_map)}")
+
+    return issues
 
 
 def get_pdf_theme(template: str) -> dict:
@@ -1451,6 +1469,38 @@ def draw_pdf_title(pdf, title: str, x: float, y: float, font_size: int = 12) -> 
     return y - 16
 
 
+PDF_SECTION_ICON_FALLBACKS = {
+    "Profile": "[P]",
+    "Core Competencies": "[C]",
+    "Professional Experience": "[E]",
+    "Education": "[Ed]",
+    "Certifications": "[Cert]",
+    "Languages": "[Lang]",
+    "Referees": "[Ref]",
+    "Contact": "[Ct]",
+}
+
+
+def draw_pdf_section_title(
+    pdf,
+    title: str,
+    x: float,
+    y: float,
+    font_size: int = 12,
+    title_color=None,
+    line_color=None,
+) -> float:
+    icon = PDF_SECTION_ICON_FALLBACKS.get(title, "")
+    prefix = f"{icon} " if icon else ""
+    pdf.setFillColor(title_color or colors.HexColor("#1E3A5F"))
+    pdf.setFont("Helvetica-Bold", font_size)
+    pdf.drawString(x, y, pdf_safe_text(f"{prefix}{title}"))
+    pdf.setStrokeColor(line_color or colors.HexColor("#BFD7ED"))
+    pdf.setLineWidth(1)
+    pdf.line(x, y - 3, x + 130, y - 3)
+    return y - 16
+
+
 def draw_section_card(pdf, x: float, y: float, width: float, height: float, fill: colors.Color, border: colors.Color) -> float:
     pdf.setFillColor(fill)
     pdf.setStrokeColor(border)
@@ -1561,7 +1611,7 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
         pdf.setFillColor(text_color)
 
     y = ensure_pdf_space(pdf, y, 40, bottom, top, on_new_page=on_new_page_callback)
-    y = draw_pdf_title(pdf, "Profile", left, y)
+    y = draw_pdf_section_title(pdf, "Profile", left, y, title_color=colors.HexColor("#1E3A5F"))
     pdf.setFillColor(text_color)
     y = draw_pdf_wrapped_text(
         pdf,
@@ -1576,7 +1626,7 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
     y -= 6
 
     y = ensure_pdf_space(pdf, y, 40, bottom, top, on_new_page=on_new_page_callback)
-    y = draw_pdf_title(pdf, "Core Competencies", left, y)
+    y = draw_pdf_section_title(pdf, "Core Competencies", left, y, title_color=colors.HexColor("#1E3A5F"))
     pdf.setFillColor(text_color)
     for item in cv.get("core_competencies", []):
         y = draw_pdf_wrapped_text(
@@ -1585,7 +1635,7 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
     y -= 6
 
     y = ensure_pdf_space(pdf, y, 40, bottom, top, on_new_page=on_new_page_callback)
-    y = draw_pdf_title(pdf, "Professional Experience", left, y)
+    y = draw_pdf_section_title(pdf, "Professional Experience", left, y, title_color=colors.HexColor("#1E3A5F"))
     pdf.setFillColor(text_color)
     for exp in cv.get("experience", []):
         y = ensure_pdf_space(pdf, y, 28, bottom, top, on_new_page=on_new_page_callback)
@@ -1609,7 +1659,7 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
         y -= 3
 
     y = ensure_pdf_space(pdf, y, 36, bottom, top, on_new_page=on_new_page_callback)
-    y = draw_pdf_title(pdf, "Education", left, y)
+    y = draw_pdf_section_title(pdf, "Education", left, y, title_color=colors.HexColor("#1E3A5F"))
     pdf.setFillColor(text_color)
     for item in cv.get("education", []):
         record = normalize_education_record(item)
@@ -1627,7 +1677,7 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
         )
 
     y = ensure_pdf_space(pdf, y, 36, bottom, top, on_new_page=on_new_page_callback)
-    y = draw_pdf_title(pdf, "Certifications", left, y)
+    y = draw_pdf_section_title(pdf, "Certifications", left, y, title_color=colors.HexColor("#1E3A5F"))
     pdf.setFillColor(text_color)
     for item in cv.get("certifications", []):
         y = draw_pdf_wrapped_text(
@@ -1635,7 +1685,7 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
         )
 
     y = ensure_pdf_space(pdf, y, 36, bottom, top, on_new_page=on_new_page_callback)
-    y = draw_pdf_title(pdf, "Languages", left, y)
+    y = draw_pdf_section_title(pdf, "Languages", left, y, title_color=colors.HexColor("#1E3A5F"))
     pdf.setFillColor(text_color)
     for item in cv.get("languages", []):
         y = draw_pdf_wrapped_text(
@@ -1643,7 +1693,7 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
         )
 
     y = ensure_pdf_space(pdf, y, 42, bottom, top, on_new_page=on_new_page_callback)
-    y = draw_pdf_title(pdf, "Referees", left, y)
+    y = draw_pdf_section_title(pdf, "Referees", left, y, title_color=colors.HexColor("#1E3A5F"))
     pdf.setFillColor(text_color)
     for idx, ref in enumerate(cv.get("referees", []), start=1):
         name = ref.get("name", "")
@@ -1906,7 +1956,7 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
 
     def render_op(op: dict, x: float, y: float) -> float:
         if op["kind"] == "title":
-            return draw_pdf_title(pdf, op["title"], x, y)
+            return draw_pdf_section_title(pdf, op["title"], x, y, title_color=colors.HexColor("#1E3A5F"))
         if op["kind"] == "line":
             pdf.setFillColor(text_color)
             pdf.setFont(op["font_name"], op["font_size"])
@@ -2048,6 +2098,7 @@ def cv_editor(profile_id: int, selected_version: dict) -> None:
 def download_section(cv: dict, suggested_name: str, template: str) -> None:
     st.subheader("Download CV")
     st.caption(f"Download template: {template}")
+    st.caption("Note: PDF export uses a print-safe renderer; complex HTML/CSS glyph icons are converted to fallback markers.")
     html_output = build_html(cv, template)
     pdf_output = build_pdf(cv, template) if REPORTLAB_AVAILABLE else b""
     slug = template.lower().replace(" ", "_").replace("-", "")
@@ -2112,10 +2163,16 @@ def render_editor_login() -> None:
 st.set_page_config(page_title="CV Portfolio Manager", page_icon="💼", layout="wide")
 init_db()
 
+template_mapping_issues = validate_template_mappings()
+
 if "editor_authenticated" not in st.session_state:
     st.session_state["editor_authenticated"] = False
 
 st.sidebar.title("CV Portfolio")
+if template_mapping_issues:
+    st.sidebar.warning("Template mapping issues detected")
+    for issue in template_mapping_issues:
+        st.sidebar.caption(f"- {issue}")
 page = st.sidebar.radio("Navigation", ["Public View", "Editor"], index=0)
 
 if page == "Public View":
