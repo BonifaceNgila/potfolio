@@ -132,9 +132,21 @@ def default_cv_data() -> dict:
             },
         ],
         "education": [
-            "Master of Science in Computer Science, UNICAF University (Ongoing)",
-            "Coursework includes Cryptography and Networking Security",
-            "Bachelor of Business Information Technology, Taita Taveta University (November 2019)",
+            {
+                "course": "Master of Science in Computer Science",
+                "institution": "UNICAF University",
+                "timeline": "Ongoing",
+            },
+            {
+                "course": "Coursework in Cryptography and Networking Security",
+                "institution": "UNICAF University",
+                "timeline": "Ongoing",
+            },
+            {
+                "course": "Bachelor of Business Information Technology",
+                "institution": "Taita Taveta University",
+                "timeline": "November 2019",
+            },
         ],
         "certifications": [
             "Google IT Support Professional Certification",
@@ -146,25 +158,29 @@ def default_cv_data() -> dict:
         "referees": [
             {
                 "name": "Winfred Mukonza",
-                "title": "Country Sponsorship Manager, Plan International Kenya",
+                "organization": "Plan International Kenya",
+                "title": "Country Sponsorship Manager",
                 "email": "winfred.mukonza@plan-international.org",
                 "phone": "+254713267985",
             },
             {
                 "name": "Eston Nyaga",
-                "title": "Program Area Manager, Plan International Kenya, Coast Hub",
+                "organization": "Plan International Kenya, Coast Hub",
+                "title": "Program Area Manager",
                 "email": "eston.nyaga@plan-international.org",
                 "phone": "+254722912493",
             },
             {
                 "name": "Cynthia Akoth",
-                "title": "IT Coordinator, Plan International Kenya",
+                "organization": "Plan International Kenya",
+                "title": "IT Coordinator",
                 "email": "cynthia.akoth@plan-international.org",
                 "phone": "+254707870390",
             },
             {
                 "name": "Sharon Meliyio",
-                "title": "Country IT Manager, Plan International Kenya",
+                "organization": "Plan International Kenya",
+                "title": "Country IT Manager",
                 "email": "sharon.meliyio@plan-international.org",
                 "phone": "+254724917720",
             },
@@ -412,6 +428,34 @@ def text_to_experience(raw: str) -> list[dict]:
     return entries
 
 
+def education_to_text(education: list[dict]) -> str:
+    lines = []
+    for item in education:
+        parts = [
+            item.get("course", ""),
+            item.get("institution", ""),
+            item.get("timeline", ""),
+        ]
+        lines.append(" || ".join(parts))
+    return "\n".join(lines)
+
+
+def text_to_education(raw: str) -> list[dict]:
+    records: list[dict] = []
+    for line in raw.splitlines():
+        if not line.strip():
+            continue
+        parts = [p.strip() for p in line.split("||")]
+        records.append(
+            {
+                "course": parts[0] if len(parts) > 0 else "",
+                "institution": parts[1] if len(parts) > 1 else "",
+                "timeline": parts[2] if len(parts) > 2 else "",
+            }
+        )
+    return records
+
+
 def referees_to_text(referees: list[dict]) -> str:
     lines = []
     for ref in referees:
@@ -419,7 +463,8 @@ def referees_to_text(referees: list[dict]) -> str:
             " || ".join(
                 [
                     ref.get("name", ""),
-                    ref.get("title", ""),
+                    ref.get("organization", ""),
+                    ref.get("position", ""),
                     ref.get("email", ""),
                     ref.get("phone", ""),
                 ]
@@ -437,9 +482,10 @@ def text_to_referees(raw: str) -> list[dict]:
         refs.append(
             {
                 "name": parts[0] if len(parts) > 0 else "",
-                "title": parts[1] if len(parts) > 1 else "",
-                "email": parts[2] if len(parts) > 2 else "",
-                "phone": parts[3] if len(parts) > 3 else "",
+                "organization": parts[1] if len(parts) > 1 else "",
+                "position": parts[2] if len(parts) > 2 else "",
+                "email": parts[3] if len(parts) > 3 else "",
+                "phone": parts[4] if len(parts) > 4 else "",
             }
         )
     return refs
@@ -451,7 +497,7 @@ def render_cv_streamlit(cv: dict, template: str) -> None:
     st.caption(f"Template: {template}")
 
     html_output = build_html(cv, template)
-    components.html(html_output, height=1200, scrolling=True)
+    components.html(html_output, height=1600, scrolling=True)
 
 
 def html_list(items: list[str]) -> str:
@@ -462,50 +508,90 @@ def html_list(items: list[str]) -> str:
 def html_experience(experience: list[dict]) -> str:
     chunks = []
     for item in experience:
+        role = html.escape(item.get("role", ""))
+        org = html.escape(item.get("organization", ""))
+        period = html.escape(item.get("period", ""))
         bullets = html_list(item.get("bullets", []))
         chunks.append(
-            """
-            <div class="job">
-                <h4>{role}</h4>
-                <p class="meta">{org} | {period}</p>
+            f"""
+            <div class=\"job\">
+                <div class=\"experience-header\">
+                    <h4>{role}</h4>
+                    <span class=\"experience-period\">🕒 {period}</span>
+                </div>
+                <div class=\"experience-org\">🏢 {org}</div>
                 {bullets}
             </div>
-            """.format(
-                role=html.escape(item.get("role", "")),
-                org=html.escape(item.get("organization", "")),
-                period=html.escape(item.get("period", "")),
-                bullets=bullets,
-            )
+            """
         )
     return "".join(chunks)
+
+
+def html_education(education: list[dict]) -> str:
+    entries = []
+    for item in education:
+        course = html.escape(item.get("course", ""))
+        institution = html.escape(item.get("institution", ""))
+        timeline = html.escape(item.get("timeline", ""))
+        entries.append(
+            f"""
+            <div class=\"education-entry\">
+                <div class=\"education-top\">
+                    <span class=\"education-course\">📚 {course}</span>
+                    <span class=\"education-timeline\">{timeline}</span>
+                </div>
+                <div class=\"education-institution\">
+                    🎓 {institution}
+                </div>
+            </div>
+            """
+        )
+    return "".join(entries)
 
 
 def html_referees(referees: list[dict]) -> str:
     entries = []
     for ref in referees:
         name = html.escape(ref.get("name", ""))
-        title = html.escape(ref.get("title", ""))
+        organization = html.escape(ref.get("organization", "") or "")
+        position = html.escape(ref.get("position", "") or ref.get("title", ""))
         email = html.escape(ref.get("email", ""))
         phone = html.escape(ref.get("phone", ""))
-        details = []
-        if title:
-            details.append(f"<span class='referee-title'>{title}</span>")
+        meta_parts = []
+        if position:
+            meta_parts.append(f"<span class='referee-field'>🎯 {position}</span>")
         if email:
-            details.append(f"<span class='referee-contact'>Email: {email}</span>")
+            meta_parts.append(f"<span class='referee-field'>✉️ {email}</span>")
         if phone:
-            details.append(f"<span class='referee-contact'>Phone: {phone}</span>")
-        details_html = "".join(details)
+            meta_parts.append(f"<span class='referee-field'>📞 {phone}</span>")
+        meta_html = "".join(meta_parts)
         entries.append(
-            """
+            f"""
             <li class='referee'>
-                <strong>{name}</strong>
-                {details}
+                <div class='referee-head'>
+                    <span class='referee-name'>🧑‍💼 {name}</span>
+                    <span class='referee-org'>🏢 {organization}</span>
+                </div>
+                <div class='referee-meta'>
+                    {meta_html}
+                </div>
             </li>
-            """.format(name=name, details=details_html)
+            """
         )
     if not entries:
         return ""
     return f"<ul class='referees-list'>{''.join(entries)}</ul>"
+
+
+def section_header(title: str, icon: str) -> str:
+    if not title:
+        return ""
+    return (
+        "<div class='section-heading'>"
+        f"<span class='section-icon'>{html.escape(icon)}</span>"
+        f"<h2>{html.escape(title)}</h2>"
+        "</div>"
+    )
 
 
 def build_html(cv: dict, template: str) -> str:
@@ -526,17 +612,45 @@ def build_html(cv: dict, template: str) -> str:
         link_items.append(f"<a href='{html.escape(github_url)}'>GitHub</a>")
     links = f"<p>{' | '.join(link_items)}</p>" if link_items else ""
 
+    profile_section = (
+        section_header("Profile", "🧭") + f"<p>{profile}</p>"
+    )
+    experience_section = (
+        section_header("Professional Experience", "💼")
+        + html_experience(cv.get("experience", []))
+    )
+    education_section = (
+        section_header("Education", "🎓")
+        + html_education(cv.get("education", []))
+    )
+    competencies_section = (
+        section_header("Core Competencies", "🧠")
+        + html_list(cv.get("core_competencies", []))
+    )
+    certifications_section = (
+        section_header("Certifications", "📜")
+        + html_list(cv.get("certifications", []))
+    )
+    languages_section = (
+        section_header("Languages", "🗣️")
+        + html_list(cv.get("languages", []))
+    )
+    referees_section = (
+        section_header("Referees", "🧑‍💼")
+        + html_referees(cv.get("referees", []))
+    )
+
     section_main = f"""
-    <h2>Profile</h2><p>{profile}</p>
-    <h2>Professional Experience</h2>{html_experience(cv.get('experience', []))}
-    <h2>Education</h2>{html_list(cv.get('education', []))}
+    {profile_section}
+    {experience_section}
+    {education_section}
     """
 
     section_side = f"""
-    <h2>Core Competencies</h2>{html_list(cv.get('core_competencies', []))}
-    <h2>Certifications</h2>{html_list(cv.get('certifications', []))}
-    <h2>Languages</h2>{html_list(cv.get('languages', []))}
-    <h2>Referees</h2>{html_referees(cv.get('referees', []))}
+    {competencies_section}
+    {certifications_section}
+    {languages_section}
+    {referees_section}
     """
 
     sidebar_skills = html_list(cv.get('core_competencies', []))
@@ -710,6 +824,34 @@ def build_html(cv: dict, template: str) -> str:
     .divider { height: 1px; background: #e2e8f0; margin: 32px 0 18px; }
     """
 
+    shared_section_styles = """
+    .section-heading { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .section-heading h2 { margin: 0; font-size: 20px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600; }
+    .section-icon { font-size: 20px; }
+    .experience-header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+    .experience-period { font-size: 13px; color: #475569; }
+    .experience-org { font-size: 14px; color: #1f2937; margin-bottom: 6px; }
+    .education-entry { padding: 10px 12px; border-left: 3px solid #1d4ed8; margin-bottom: 10px; background: rgba(29,78,216,0.06); border-radius: 4px; }
+    .education-top { display: flex; justify-content: space-between; font-size: 14px; font-weight: 600; }
+    .education-course { display: inline-flex; gap: 6px; }
+    .education-timeline { font-size: 12px; color: #475569; }
+    .education-institution { font-size: 13px; color: #0f172a; margin-top: 4px; }
+    .referee { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed rgba(15,23,42,0.1); }
+    .referee-head { display: flex; flex-direction: column; gap: 2px; }
+    .referee-name { font-weight: 600; }
+    .referee-org { font-size: 13px; color: #475569; }
+    .referee-meta { margin-top: 4px; display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: #1f2937; }
+    .referee-field { display: inline-flex; align-items: center; gap: 4px; padding-right: 8px; }
+    """
+
+    one_column_css += shared_section_styles
+    one_column_minimal_css += shared_section_styles
+    two_column_css += shared_section_styles
+    two_column_sidebar_css += shared_section_styles
+    two_column_sidebar_skillset_css += shared_section_styles
+    two_column_accent_css += shared_section_styles
+    two_column_slate_css += shared_section_styles
+
     if template == "One Column - Minimal":
         return f"""
         <html><head><meta charset='UTF-8'><style>{one_column_minimal_css}</style></head>
@@ -870,7 +1012,7 @@ def build_html(cv: dict, template: str) -> str:
         skills_html = html_list(skills_entries)
         technical_entries = competencies[6:]
         tech_html = html_list(technical_entries)
-        education_html = html_list(cv.get("education", []))
+        education_html = html_education(cv.get("education", []))
         languages_html = html_list(cv.get("languages", []))
         referees_html = html_referees(cv.get("referees", []))
         links_row = f"<div class='links-row'>{' | '.join(link_items)}</div>" if link_items else ""
@@ -878,7 +1020,7 @@ def build_html(cv: dict, template: str) -> str:
         education_section = (
             f"""
             <div class='sidebar-section'>
-                <h3>Education</h3>
+                <h3>🎓 Education</h3>
                 {education_html}
             </div>
             """ if education_html else ""
@@ -886,7 +1028,7 @@ def build_html(cv: dict, template: str) -> str:
         skills_section = (
             f"""
             <div class='sidebar-section'>
-                <h3>Skills</h3>
+                <h3>🧠 Skills</h3>
                 {skills_html}
             </div>
             """ if skills_html else ""
@@ -894,7 +1036,7 @@ def build_html(cv: dict, template: str) -> str:
         tech_section = (
             f"""
             <div class='sidebar-section'>
-                <h3>Technical Proficiencies</h3>
+                <h3>⚙️ Technical Proficiencies</h3>
                 {tech_html}
             </div>
             """ if tech_html else ""
@@ -902,7 +1044,7 @@ def build_html(cv: dict, template: str) -> str:
         languages_section = (
             f"""
             <div class='sidebar-section'>
-                <h3>Languages</h3>
+                <h3>🗣️ Languages</h3>
                 {languages_html}
             </div>
             """ if languages_html else ""
@@ -1118,7 +1260,16 @@ def build_pdf_one_column(cv: dict) -> bytes:
     y = ensure_pdf_space(pdf, y, 36, bottom, top)
     y = draw_pdf_title(pdf, "Education", left, y)
     for item in cv.get("education", []):
-        y = draw_pdf_wrapped_text(pdf, f"- {item}", left, y, content_width, bottom, top)
+        course = item.get("course", "")
+        institution = item.get("institution", "")
+        timeline = item.get("timeline", "")
+        line_parts = [part for part in [course, institution] if part]
+        if timeline:
+            line_parts.append(f"({timeline})")
+        entry_line = " - ".join(line_parts) if line_parts else ""
+        if entry_line:
+            entry_line = f"• {entry_line}"
+        y = draw_pdf_wrapped_text(pdf, entry_line, left, y, content_width, bottom, top)
 
     y = ensure_pdf_space(pdf, y, 36, bottom, top)
     y = draw_pdf_title(pdf, "Certifications", left, y)
@@ -1133,11 +1284,23 @@ def build_pdf_one_column(cv: dict) -> bytes:
     y = ensure_pdf_space(pdf, y, 42, bottom, top)
     y = draw_pdf_title(pdf, "Referees", left, y)
     for idx, ref in enumerate(cv.get("referees", []), start=1):
-        ref_line = (
-            f"{idx}. {ref.get('name', '')} - {ref.get('title', '')} | "
-            f"Email: {ref.get('email', '')} | Phone: {ref.get('phone', '')}"
-        )
-        y = draw_pdf_wrapped_text(pdf, ref_line, left, y, content_width, bottom, top)
+        name = ref.get("name", "")
+        position = ref.get("position") or ref.get("title", "")
+        organization = ref.get("organization", "")
+        email = ref.get("email", "")
+        phone = ref.get("phone", "")
+        parts = [part for part in [name, position, organization] if part]
+        ref_summary = " | ".join(parts)
+        contact = []
+        if email:
+            contact.append(f"Email: {email}")
+        if phone:
+            contact.append(f"Phone: {phone}")
+        contact_line = " | ".join(contact)
+        full_line = f"{idx}. {ref_summary}" if ref_summary else f"{idx}."
+        if contact_line:
+            full_line = f"{full_line} | {contact_line}"
+        y = draw_pdf_wrapped_text(pdf, full_line, left, y, content_width, bottom, top)
 
     pdf.save()
     buffer.seek(0)
@@ -1235,7 +1398,16 @@ def build_pdf_two_column(cv: dict) -> bytes:
 
     y_left = draw_pdf_title(pdf, "Education", left_x, y_left)
     for item in cv.get("education", []):
-        y_left = draw_pdf_wrapped_text(pdf, f"- {item}", left_x, y_left, left_width, bottom, top)
+        course = item.get("course", "")
+        institution = item.get("institution", "")
+        timeline = item.get("timeline", "")
+        parts = [part for part in [course, institution] if part]
+        if timeline:
+            parts.append(f"({timeline})")
+        entry_line = " - ".join(parts) if parts else ""
+        if entry_line:
+            entry_line = f"• {entry_line}"
+        y_left = draw_pdf_wrapped_text(pdf, entry_line, left_x, y_left, left_width, bottom, top)
 
     y_right = draw_pdf_title(pdf, "Contact", right_x, y_right)
     y_right = draw_pdf_wrapped_text(
@@ -1318,7 +1490,24 @@ def build_pdf_two_column(cv: dict) -> bytes:
     y_right -= 4
     y_right = draw_pdf_title(pdf, "Referees", right_x, y_right)
     for ref in cv.get("referees", []):
-        text = f"- {ref.get('name', '')}: {ref.get('title', '')}, {ref.get('phone', '')}"
+        name = ref.get("name", "")
+        position = ref.get("position") or ref.get("title", "")
+        organization = ref.get("organization", "")
+        email = ref.get("email", "")
+        phone = ref.get("phone", "")
+        parts = [part for part in [name, position, organization] if part]
+        summary = " | ".join(parts)
+        contacts = []
+        if email:
+            contacts.append(f"Email: {email}")
+        if phone:
+            contacts.append(f"Phone: {phone}")
+        contact_line = " | ".join(contacts)
+        text = f"{summary}" if summary else ""
+        if contact_line:
+            text = f"{text} | {contact_line}" if text else contact_line
+        if text:
+            text = f"- {text}"
         y_right = draw_pdf_wrapped_text(
             pdf, text, right_x, y_right, right_width, bottom, top, font_size=9, leading=12
         )
@@ -1366,10 +1555,11 @@ def cv_editor(profile_id: int, selected_version: dict) -> None:
         height=260,
     )
 
+    st.caption("Education format: Course || Institution || Timeline")
     education_text = st.text_area(
-        "Education (one per line)",
-        value=list_to_text(cv.get("education", [])),
-        height=120,
+        "Education",
+        value=education_to_text(cv.get("education", [])),
+        height=140,
     )
     certifications_text = st.text_area(
         "Certifications (one per line)",
@@ -1382,7 +1572,7 @@ def cv_editor(profile_id: int, selected_version: dict) -> None:
         height=90,
     )
 
-    st.caption("Referees format: Name || Title || Email || Phone")
+    st.caption("Referees format: Name || Organization || Position || Email || Phone")
     referees_text = st.text_area(
         "Referees",
         value=referees_to_text(cv.get("referees", [])),
@@ -1400,7 +1590,7 @@ def cv_editor(profile_id: int, selected_version: dict) -> None:
         "profile_summary": profile_summary,
         "core_competencies": text_to_list(competencies_text),
         "experience": text_to_experience(experience_text),
-        "education": text_to_list(education_text),
+        "education": text_to_education(education_text),
         "certifications": text_to_list(certifications_text),
         "languages": text_to_list(languages_text),
         "referees": text_to_referees(referees_text),
