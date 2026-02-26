@@ -384,6 +384,21 @@ PDF_TEMPLATE_THEMES = {
             "layout": "modern_header",
         },
     ),
+    "One Column - Classic": _merge_pdf_theme(
+        PDF_BASE_ONE_COLUMN_THEME,
+        {
+            "background": colors.HexColor("#030712"),
+            "hero_background": colors.HexColor("#102a43"),
+            "hero_accent": colors.HexColor("#1e3a8a"),
+            "hero_strip": colors.HexColor("#2563eb"),
+            "panel_primary": colors.HexColor("#0f172a"),
+            "panel_secondary": colors.HexColor("#0f172a"),
+            "text_color": colors.HexColor("#e2e8f0"),
+            "hero_text": colors.HexColor("#f8fafc"),
+            "border": colors.HexColor("#1d4ed8"),
+            "link_color": colors.HexColor("#38bdf8"),
+        },
+    ),
     "One Column - Minimal": _merge_pdf_theme(
         PDF_BASE_ONE_COLUMN_THEME,
         {
@@ -395,11 +410,17 @@ PDF_TEMPLATE_THEMES = {
 }
 
 
+DISPLAY_TO_PDF_TEMPLATE_MAP = {template: template for template in AVAILABLE_TEMPLATES}
+
+
 def get_pdf_theme(template: str) -> dict:
-    if template in PDF_TEMPLATE_THEMES:
-        return PDF_TEMPLATE_THEMES[template]
-    if "Two Column" in template:
+    mapped_template = DISPLAY_TO_PDF_TEMPLATE_MAP.get(template, template)
+    if mapped_template in PDF_TEMPLATE_THEMES:
+        return PDF_TEMPLATE_THEMES[mapped_template]
+    if "Two Column" in mapped_template:
         return PDF_TEMPLATE_THEMES["Two Column - Professional"]
+    if "One Column" in mapped_template:
+        return PDF_TEMPLATE_THEMES["One Column - Classic"]
     return PDF_TEMPLATE_THEMES["One Column - Minimal"]
 
 
