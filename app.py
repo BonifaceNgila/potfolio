@@ -6,6 +6,7 @@ import re
 import sqlite3
 import tempfile
 from datetime import datetime
+from inspect import signature
 from io import BytesIO
 
 import streamlit as st
@@ -197,6 +198,16 @@ TEXT_FORMATTERS = [
     "unordered_list",
     "quote",
 ]
+
+TEXT_AREA_SUPPORTS_FORMATTERS = "text_formatters" in signature(st.text_area).parameters
+
+
+def rich_text_area(label: str, value: str, height: int, **kwargs) -> str:
+    params = {"value": value, "height": height}
+    params.update(kwargs)
+    if TEXT_AREA_SUPPORTS_FORMATTERS:
+        params["text_formatters"] = TEXT_FORMATTERS
+    return st.text_area(label, **params)
 
 
 def get_conn() -> sqlite3.Connection:
@@ -1566,53 +1577,46 @@ def cv_editor(profile_id: int, selected_version: dict) -> None:
         github = st.text_input("GitHub URL", value=cv.get("github", ""))
         version_name = st.text_input("Version Name", value=selected_version["version_name"])
 
-    profile_summary = st.text_area(
+    profile_summary = rich_text_area(
         "Profile Summary",
         value=cv.get("profile_summary", ""),
         height=140,
-        text_formatters=TEXT_FORMATTERS,
     )
-    competencies_text = st.text_area(
+    competencies_text = rich_text_area(
         "Core Competencies (one per line)",
         value=list_to_text(cv.get("core_competencies", [])),
         height=160,
-        text_formatters=TEXT_FORMATTERS,
     )
 
     st.caption("Experience format per block: Role || Organization || Period, then bullet lines starting with '-'.")
-    experience_text = st.text_area(
+    experience_text = rich_text_area(
         "Professional Experience",
         value=experience_to_text(cv.get("experience", [])),
         height=260,
-        text_formatters=TEXT_FORMATTERS,
     )
 
     st.caption("Education format: Course || Institution || Timeline")
-    education_text = st.text_area(
+    education_text = rich_text_area(
         "Education",
         value=education_to_text(cv.get("education", [])),
         height=140,
-        text_formatters=TEXT_FORMATTERS,
     )
-    certifications_text = st.text_area(
+    certifications_text = rich_text_area(
         "Certifications (one per line)",
         value=list_to_text(cv.get("certifications", [])),
         height=120,
-        text_formatters=TEXT_FORMATTERS,
     )
-    languages_text = st.text_area(
+    languages_text = rich_text_area(
         "Languages (one per line)",
         value=list_to_text(cv.get("languages", [])),
         height=90,
-        text_formatters=TEXT_FORMATTERS,
     )
 
     st.caption("Referees format: Name || Organization || Position || Email || Phone")
-    referees_text = st.text_area(
+    referees_text = rich_text_area(
         "Referees",
         value=referees_to_text(cv.get("referees", [])),
         height=150,
-        text_formatters=TEXT_FORMATTERS,
     )
 
     new_cv = {
