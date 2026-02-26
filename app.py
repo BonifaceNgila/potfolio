@@ -1,12 +1,32 @@
 import html
 import json
+import os
 import re
 import sqlite3
+import tempfile
 from datetime import datetime
 
 import streamlit as st
 
-DB_PATH = "cv_portfolio.db"
+
+def resolve_db_path() -> str:
+    explicit_path = os.getenv("CV_DB_PATH", "").strip()
+    if explicit_path:
+        parent_dir = os.path.dirname(explicit_path)
+        if parent_dir:
+            os.makedirs(parent_dir, exist_ok=True)
+        return explicit_path
+
+    default_path = os.path.join(os.getcwd(), "cv_portfolio.db")
+    try:
+        with open(default_path, "a", encoding="utf-8"):
+            pass
+        return default_path
+    except OSError:
+        return os.path.join(tempfile.gettempdir(), "cv_portfolio.db")
+
+
+DB_PATH = resolve_db_path()
 
 
 def default_cv_data() -> dict:
@@ -114,7 +134,17 @@ def default_cv_data() -> dict:
 
 
 def get_conn() -> sqlite3.Connection:
+    parent_dir = os.path.dirname(DB_PATH)
+    if parent_dir:
+        os.makedirs(parent_dir, exist_ok=True)
     return sqlite3.connect(DB_PATH)
+
+
+def ensure_column(cur: sqlite3.Cursor, table: str, column: str, definition: str) -> None:
+    cur.execute(f"PRAGMA table_info({table})")
+    existing_columns = {row[1] for row in cur.fetchall()}
+    if column not in existing_columns:
+        cur.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
 
 
 def init_db() -> None:
@@ -144,10 +174,22 @@ def init_db() -> None:
         """
     )
 
+    ensure_column(cur, "profiles", "is_default", "INTEGER NOT NULL DEFAULT 0")
+    ensure_column(cur, "profiles", "created_at", "TEXT NOT NULL DEFAULT ''")
+
+    ensure_column(cur, "cv_versions", "version_name", "TEXT NOT NULL DEFAULT ''")
+    ensure_column(cur, "cv_versions", "cv_json", "TEXT NOT NULL DEFAULT '{}' ")
+    ensure_column(cur, "cv_versions", "created_at", "TEXT NOT NULL DEFAULT ''")
+    ensure_column(cur, "cv_versions", "updated_at", "TEXT NOT NULL DEFAULT ''")
+
+    now = datetime.utcnow().isoformat()
+    cur.execute("UPDATE profiles SET created_at = ? WHERE created_at IS NULL OR created_at = ''", (now,))
+    cur.execute("UPDATE cv_versions SET created_at = ? WHERE created_at IS NULL OR created_at = ''", (now,))
+    cur.execute("UPDATE cv_versions SET updated_at = created_at WHERE updated_at IS NULL OR updated_at = ''")
+
     cur.execute("SELECT COUNT(*) FROM profiles")
     profile_count = cur.fetchone()[0]
     if profile_count == 0:
-        now = datetime.utcnow().isoformat()
         cur.execute(
             "INSERT INTO profiles(name, is_default, created_at) VALUES (?, ?, ?)",
             ("Boniface Main Profile", 1, now),
