@@ -1470,14 +1470,14 @@ def draw_pdf_title(pdf, title: str, x: float, y: float, font_size: int = 12) -> 
 
 
 PDF_SECTION_ICON_FALLBACKS = {
-    "Profile": "[P]",
-    "Core Competencies": "[C]",
-    "Professional Experience": "[E]",
-    "Education": "[Ed]",
-    "Certifications": "[Cert]",
-    "Languages": "[Lang]",
-    "Referees": "[Ref]",
-    "Contact": "[Ct]",
+    "Profile": "P",
+    "Core Competencies": "C",
+    "Professional Experience": "E",
+    "Education": "Ed",
+    "Certifications": "Cf",
+    "Languages": "Lg",
+    "Referees": "Rf",
+    "Contact": "Ct",
 }
 
 
@@ -1489,15 +1489,29 @@ def draw_pdf_section_title(
     font_size: int = 12,
     title_color=None,
     line_color=None,
+    icon_badge_color=None,
+    icon_text_color=None,
 ) -> float:
     icon = PDF_SECTION_ICON_FALLBACKS.get(title, "")
-    prefix = f"{icon} " if icon else ""
+    title_x = x
+    if icon:
+        badge_color = icon_badge_color or line_color or colors.HexColor("#BFD7ED")
+        text_color = icon_text_color or colors.white
+        badge_x = x + 6
+        badge_y = y - 2
+        pdf.setFillColor(badge_color)
+        pdf.circle(badge_x, badge_y, 6, fill=1, stroke=0)
+        pdf.setFillColor(text_color)
+        pdf.setFont("Helvetica-Bold", 5)
+        pdf.drawCentredString(badge_x, badge_y - 2, pdf_safe_text(icon))
+        title_x = x + 20
+
     pdf.setFillColor(title_color or colors.HexColor("#1E3A5F"))
     pdf.setFont("Helvetica-Bold", font_size)
-    pdf.drawString(x, y, pdf_safe_text(f"{prefix}{title}"))
+    pdf.drawString(title_x, y, pdf_safe_text(title))
     pdf.setStrokeColor(line_color or colors.HexColor("#BFD7ED"))
     pdf.setLineWidth(1)
-    pdf.line(x, y - 3, x + 130, y - 3)
+    pdf.line(title_x, y - 3, title_x + 130, y - 3)
     return y - 16
 
 
@@ -1533,6 +1547,16 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
     panel_secondary = theme.get("panel_secondary", colors.HexColor("#0f172a"))
     border_color = theme.get("border", colors.HexColor("#1d4ed8"))
     layout_style = theme.get("layout", "classic_hero")
+    section_title_color = theme.get(
+        "section_title_color",
+        colors.HexColor("#1E3A5F") if layout_style == "minimal_clean" else theme.get("hero_strip", colors.HexColor("#2563eb")),
+    )
+    section_line_color = theme.get(
+        "section_line_color",
+        colors.HexColor("#BFD7ED") if layout_style == "minimal_clean" else border_color,
+    )
+    section_icon_badge_color = theme.get("section_icon_badge_color", section_line_color)
+    section_icon_text_color = theme.get("section_icon_text_color", colors.white)
 
     buffer = BytesIO()
     pdf = canvas.Canvas(buffer, pagesize=A4)
@@ -1611,7 +1635,16 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
         pdf.setFillColor(text_color)
 
     y = ensure_pdf_space(pdf, y, 40, bottom, top, on_new_page=on_new_page_callback)
-    y = draw_pdf_section_title(pdf, "Profile", left, y, title_color=colors.HexColor("#1E3A5F"))
+    y = draw_pdf_section_title(
+        pdf,
+        "Profile",
+        left,
+        y,
+        title_color=section_title_color,
+        line_color=section_line_color,
+        icon_badge_color=section_icon_badge_color,
+        icon_text_color=section_icon_text_color,
+    )
     pdf.setFillColor(text_color)
     y = draw_pdf_wrapped_text(
         pdf,
@@ -1626,7 +1659,16 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
     y -= 6
 
     y = ensure_pdf_space(pdf, y, 40, bottom, top, on_new_page=on_new_page_callback)
-    y = draw_pdf_section_title(pdf, "Core Competencies", left, y, title_color=colors.HexColor("#1E3A5F"))
+    y = draw_pdf_section_title(
+        pdf,
+        "Core Competencies",
+        left,
+        y,
+        title_color=section_title_color,
+        line_color=section_line_color,
+        icon_badge_color=section_icon_badge_color,
+        icon_text_color=section_icon_text_color,
+    )
     pdf.setFillColor(text_color)
     for item in cv.get("core_competencies", []):
         y = draw_pdf_wrapped_text(
@@ -1635,7 +1677,16 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
     y -= 6
 
     y = ensure_pdf_space(pdf, y, 40, bottom, top, on_new_page=on_new_page_callback)
-    y = draw_pdf_section_title(pdf, "Professional Experience", left, y, title_color=colors.HexColor("#1E3A5F"))
+    y = draw_pdf_section_title(
+        pdf,
+        "Professional Experience",
+        left,
+        y,
+        title_color=section_title_color,
+        line_color=section_line_color,
+        icon_badge_color=section_icon_badge_color,
+        icon_text_color=section_icon_text_color,
+    )
     pdf.setFillColor(text_color)
     for exp in cv.get("experience", []):
         y = ensure_pdf_space(pdf, y, 28, bottom, top, on_new_page=on_new_page_callback)
@@ -1659,7 +1710,16 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
         y -= 3
 
     y = ensure_pdf_space(pdf, y, 36, bottom, top, on_new_page=on_new_page_callback)
-    y = draw_pdf_section_title(pdf, "Education", left, y, title_color=colors.HexColor("#1E3A5F"))
+    y = draw_pdf_section_title(
+        pdf,
+        "Education",
+        left,
+        y,
+        title_color=section_title_color,
+        line_color=section_line_color,
+        icon_badge_color=section_icon_badge_color,
+        icon_text_color=section_icon_text_color,
+    )
     pdf.setFillColor(text_color)
     for item in cv.get("education", []):
         record = normalize_education_record(item)
@@ -1677,7 +1737,16 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
         )
 
     y = ensure_pdf_space(pdf, y, 36, bottom, top, on_new_page=on_new_page_callback)
-    y = draw_pdf_section_title(pdf, "Certifications", left, y, title_color=colors.HexColor("#1E3A5F"))
+    y = draw_pdf_section_title(
+        pdf,
+        "Certifications",
+        left,
+        y,
+        title_color=section_title_color,
+        line_color=section_line_color,
+        icon_badge_color=section_icon_badge_color,
+        icon_text_color=section_icon_text_color,
+    )
     pdf.setFillColor(text_color)
     for item in cv.get("certifications", []):
         y = draw_pdf_wrapped_text(
@@ -1685,7 +1754,16 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
         )
 
     y = ensure_pdf_space(pdf, y, 36, bottom, top, on_new_page=on_new_page_callback)
-    y = draw_pdf_section_title(pdf, "Languages", left, y, title_color=colors.HexColor("#1E3A5F"))
+    y = draw_pdf_section_title(
+        pdf,
+        "Languages",
+        left,
+        y,
+        title_color=section_title_color,
+        line_color=section_line_color,
+        icon_badge_color=section_icon_badge_color,
+        icon_text_color=section_icon_text_color,
+    )
     pdf.setFillColor(text_color)
     for item in cv.get("languages", []):
         y = draw_pdf_wrapped_text(
@@ -1693,7 +1771,16 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
         )
 
     y = ensure_pdf_space(pdf, y, 42, bottom, top, on_new_page=on_new_page_callback)
-    y = draw_pdf_section_title(pdf, "Referees", left, y, title_color=colors.HexColor("#1E3A5F"))
+    y = draw_pdf_section_title(
+        pdf,
+        "Referees",
+        left,
+        y,
+        title_color=section_title_color,
+        line_color=section_line_color,
+        icon_badge_color=section_icon_badge_color,
+        icon_text_color=section_icon_text_color,
+    )
     pdf.setFillColor(text_color)
     for idx, ref in enumerate(cv.get("referees", []), start=1):
         name = ref.get("name", "")
@@ -1735,6 +1822,10 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
     hero_text_color = theme.get("hero_text", colors.white)
     text_color = theme.get("text_color", colors.black)
     layout_style = theme.get("layout", "modern_header")
+    section_title_color = theme.get("section_title_color", colors.HexColor("#1E3A5F"))
+    section_line_color = theme.get("section_line_color", colors.HexColor("#BFD7ED"))
+    section_icon_badge_color = theme.get("section_icon_badge_color", section_line_color)
+    section_icon_text_color = theme.get("section_icon_text_color", colors.white)
 
     buffer = BytesIO()
     pdf = canvas.Canvas(buffer, pagesize=A4)
@@ -1956,7 +2047,16 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
 
     def render_op(op: dict, x: float, y: float) -> float:
         if op["kind"] == "title":
-            return draw_pdf_section_title(pdf, op["title"], x, y, title_color=colors.HexColor("#1E3A5F"))
+            return draw_pdf_section_title(
+                pdf,
+                op["title"],
+                x,
+                y,
+                title_color=section_title_color,
+                line_color=section_line_color,
+                icon_badge_color=section_icon_badge_color,
+                icon_text_color=section_icon_text_color,
+            )
         if op["kind"] == "line":
             pdf.setFillColor(text_color)
             pdf.setFont(op["font_name"], op["font_size"])
