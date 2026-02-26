@@ -57,6 +57,16 @@ AVAILABLE_TEMPLATES = [
     "Two Column - Slate Profile",
 ]
 
+DISPLAY_TEMPLATE_OPTIONS = {
+    "One Column • Classic": "One Column - Classic",
+    "One Column • Minimal": "One Column - Minimal",
+    "Two Column • Professional": "Two Column - Professional",
+    "Two Column • Sidebar": "Two Column - Sidebar",
+    "Two Column • Sidebar Skillset": "Two Column - Sidebar Skillset",
+    "Two Column • Accent Panel": "Two Column - Accent Panel",
+    "Two Column • Slate Profile": "Two Column - Slate Profile",
+}
+
 
 def default_cv_data() -> dict:
     return {
@@ -2115,7 +2125,8 @@ if page == "Public View":
         st.error("No default profile found. Create one in Editor.")
         st.stop()
 
-    template_choice = st.selectbox("Display Template", AVAILABLE_TEMPLATES, index=0)
+    template_choice_label = st.selectbox("Display Template", list(DISPLAY_TEMPLATE_OPTIONS.keys()), index=0)
+    template_choice = DISPLAY_TEMPLATE_OPTIONS[template_choice_label]
     st.caption(f"Showing default CV: {default_version['version_name']}")
     render_cv_streamlit(default_version["cv"], template_choice)
     st.divider()
@@ -2169,7 +2180,8 @@ else:
     selected_version_meta = version_options[selected_version_label]
     selected_version = fetch_version(selected_version_meta["id"])
 
-    preview_template = st.selectbox("Preview Template", AVAILABLE_TEMPLATES, index=0)
+    preview_template_label = st.selectbox("Preview Template", list(DISPLAY_TEMPLATE_OPTIONS.keys()), index=0)
+    preview_template = DISPLAY_TEMPLATE_OPTIONS[preview_template_label]
     st.subheader("Preview")
     render_cv_streamlit(selected_version["cv"], preview_template)
     st.divider()
