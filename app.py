@@ -292,14 +292,16 @@ def _merge_pdf_theme(base: dict, overrides: dict) -> dict:
 
 
 PDF_BASE_TWO_COLUMN_THEME = {
-    "background": colors.HexColor("#030712"),
-    "hero_background": colors.HexColor("#0f172a"),
-    "hero_accent": colors.HexColor("#1e3a8a"),
-    "hero_strip": colors.HexColor("#2563eb"),
-    "panel_primary": colors.HexColor("#f8fafc"),
-    "panel_secondary": colors.HexColor("#eef2ff"),
-    "text_color": colors.black,
+    "background": colors.HexColor("#e9eef5"),
+    "hero_background": colors.HexColor("#1e3a5f"),
+    "hero_accent": colors.HexColor("#274c77"),
+    "hero_strip": colors.HexColor("#93c5fd"),
+    "panel_primary": colors.HexColor("#ffffff"),
+    "panel_secondary": colors.HexColor("#f8fbff"),
+    "text_color": colors.HexColor("#0f172a"),
     "hero_text": colors.white,
+    "panel_border": colors.HexColor("#d6e3f2"),
+    "layout": "professional_header",
 }
 
 
@@ -316,7 +318,12 @@ PDF_BASE_ONE_COLUMN_THEME = {
 
 
 PDF_TEMPLATE_THEMES = {
-    "Two Column - Professional": PDF_BASE_TWO_COLUMN_THEME,
+    "Two Column - Professional": _merge_pdf_theme(
+        PDF_BASE_TWO_COLUMN_THEME,
+        {
+            "layout": "professional_header",
+        },
+    ),
     "Two Column - Sidebar": _merge_pdf_theme(
         PDF_BASE_TWO_COLUMN_THEME,
         {
@@ -328,6 +335,8 @@ PDF_TEMPLATE_THEMES = {
             "panel_secondary": colors.HexColor("#f4f6fb"),
             "text_color": colors.HexColor("#0f172a"),
             "hero_text": colors.HexColor("#f8fafc"),
+            "panel_border": colors.HexColor("#d6e3f2"),
+            "layout": "modern_header",
         },
     ),
     "Two Column - Sidebar Skillset": _merge_pdf_theme(
@@ -341,6 +350,8 @@ PDF_TEMPLATE_THEMES = {
             "panel_secondary": colors.HexColor("#f8fafc"),
             "text_color": colors.HexColor("#0f172a"),
             "hero_text": colors.HexColor("#f8fafc"),
+            "panel_border": colors.HexColor("#dbe5f0"),
+            "layout": "modern_header",
         },
     ),
     "Two Column - Accent Panel": _merge_pdf_theme(
@@ -354,6 +365,8 @@ PDF_TEMPLATE_THEMES = {
             "panel_secondary": colors.HexColor("#eef2ff"),
             "text_color": colors.HexColor("#0f172a"),
             "hero_text": colors.HexColor("#f8fafc"),
+            "panel_border": colors.HexColor("#d6e3f2"),
+            "layout": "modern_header",
         },
     ),
     "Two Column - Slate Profile": _merge_pdf_theme(
@@ -367,6 +380,8 @@ PDF_TEMPLATE_THEMES = {
             "panel_secondary": colors.HexColor("#f1f5f9"),
             "text_color": colors.HexColor("#0f172a"),
             "hero_text": colors.HexColor("#f8fafc"),
+            "panel_border": colors.HexColor("#d6e3f2"),
+            "layout": "modern_header",
         },
     ),
     "One Column - Minimal": _merge_pdf_theme(
@@ -1573,8 +1588,10 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
     hero_strip = theme.get("hero_strip", colors.HexColor("#2563eb"))
     panel_primary = theme.get("panel_primary", colors.HexColor("#f8fafc"))
     panel_secondary = theme.get("panel_secondary", colors.HexColor("#eef2ff"))
+    panel_border = theme.get("panel_border", colors.HexColor("#d6e3f2"))
     hero_text_color = theme.get("hero_text", colors.white)
     text_color = theme.get("text_color", colors.black)
+    layout_style = theme.get("layout", "modern_header")
 
     buffer = BytesIO()
     pdf = canvas.Canvas(buffer, pagesize=A4)
@@ -1596,15 +1613,56 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
     def draw_columns(panel_top: float) -> None:
         column_height = panel_top - bottom + 12
         pdf.setFillColor(panel_primary)
-        pdf.roundRect(left_x - 4, bottom - 4, left_width + 8, column_height, 18, fill=1, stroke=0)
+        pdf.setStrokeColor(panel_border)
+        pdf.setLineWidth(1)
+        pdf.roundRect(left_x - 4, bottom - 4, left_width + 8, column_height, 8, fill=1, stroke=1)
         pdf.setFillColor(panel_secondary)
-        pdf.roundRect(right_x - 4, bottom - 4, right_width + 8, column_height, 18, fill=1, stroke=0)
+        pdf.roundRect(right_x - 4, bottom - 4, right_width + 8, column_height, 8, fill=1, stroke=1)
 
     def draw_page_layout(first_page: bool) -> tuple[float, float]:
         pdf.setFillColor(background)
         pdf.rect(0, 0, width, height, fill=1, stroke=0)
 
         if first_page:
+            if layout_style == "professional_header":
+                header_height = 112
+                header_bottom = top - header_height
+                pdf.setFillColor(hero_background)
+                pdf.roundRect(left_x - 2, header_bottom, total_width + 4, header_height, 6, fill=1, stroke=0)
+                contact_box_height = 76
+                contact_box_width = right_width + 10
+                contact_box_x = right_x - 2
+                contact_box_y = header_bottom + 18
+                pdf.setFillColor(hero_accent)
+                pdf.roundRect(contact_box_x, contact_box_y, contact_box_width, contact_box_height, 6, fill=1, stroke=0)
+                pdf.setStrokeColor(colors.HexColor("#7da0c4"))
+                pdf.setLineWidth(0.8)
+                pdf.roundRect(contact_box_x, contact_box_y, contact_box_width, contact_box_height, 6, fill=0, stroke=1)
+
+                pdf.setFillColor(hero_text_color)
+                pdf.setFont("Helvetica-Bold", 24)
+                pdf.drawString(left_x + 10, header_bottom + header_height - 36, pdf_safe_text(cv.get("full_name", "")))
+                pdf.setFont("Helvetica-Bold", 12)
+                pdf.drawString(left_x + 10, header_bottom + header_height - 58, pdf_safe_text(cv.get("headline", "")))
+
+                pdf.setFont("Helvetica-Bold", 11)
+                pdf.drawString(contact_box_x + 8, contact_box_y + contact_box_height - 18, pdf_safe_text("Location:"))
+                pdf.setFont("Helvetica", 11)
+                pdf.drawString(contact_box_x + 56, contact_box_y + contact_box_height - 18, pdf_safe_text(cv.get("location", "")))
+                pdf.setFont("Helvetica-Bold", 11)
+                pdf.drawString(contact_box_x + 8, contact_box_y + contact_box_height - 34, pdf_safe_text("Phone:"))
+                pdf.setFont("Helvetica", 11)
+                pdf.drawString(contact_box_x + 48, contact_box_y + contact_box_height - 34, pdf_safe_text(cv.get("phone", "")))
+                pdf.setFont("Helvetica-Bold", 11)
+                pdf.drawString(contact_box_x + 8, contact_box_y + contact_box_height - 50, pdf_safe_text("Email:"))
+                pdf.setFont("Helvetica", 11)
+                pdf.drawString(contact_box_x + 46, contact_box_y + contact_box_height - 50, pdf_safe_text(cv.get("email", "")))
+
+                draw_columns(header_bottom - 10)
+                pdf.setFillColor(text_color)
+                start_y = header_bottom - 26
+                return start_y, start_y
+
             hero_height = 120
             hero_top = top
             hero_bottom = hero_top - hero_height
@@ -1632,7 +1690,10 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
         ribbon_height = 24
         ribbon_bottom = top - ribbon_height
         pdf.setFillColor(hero_background)
-        pdf.roundRect(left_x - 10, ribbon_bottom, total_width + 20, ribbon_height, 10, fill=1, stroke=0)
+        if layout_style == "professional_header":
+            pdf.roundRect(left_x - 2, ribbon_bottom, total_width + 4, ribbon_height, 5, fill=1, stroke=0)
+        else:
+            pdf.roundRect(left_x - 10, ribbon_bottom, total_width + 20, ribbon_height, 10, fill=1, stroke=0)
         pdf.setFillColor(hero_strip)
         pdf.roundRect(right_x - 4, ribbon_bottom + 5, right_width + 8, ribbon_height - 10, 8, fill=1, stroke=0)
         panel_top = top - 8
