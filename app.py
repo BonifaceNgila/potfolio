@@ -5,8 +5,13 @@ import re
 import sqlite3
 import tempfile
 from datetime import datetime
+from io import BytesIO
 
 import streamlit as st
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfgen import canvas
 
 
 def resolve_db_path() -> str:
@@ -568,44 +573,54 @@ def build_html(cv: dict, template: str) -> str:
     """
 
     one_column_css = """
-    body { font-family: Arial, sans-serif; background: #f7f7f7; margin: 0; padding: 24px; }
-    .cv { max-width: 900px; margin: auto; background: white; padding: 28px; border-radius: 8px; }
-    h1 { margin-bottom: 4px; }
-    h2 { border-bottom: 1px solid #ddd; padding-bottom: 4px; margin-top: 24px; }
-    .meta { color: #555; margin-top: -6px; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #eef2f7; margin: 0; padding: 24px; color: #1f2937; }
+    .cv { max-width: 900px; margin: auto; background: #ffffff; padding: 30px; border-radius: 10px; border-top: 8px solid #1e3a5f; box-shadow: 0 6px 18px rgba(30,58,95,0.12); }
+    h1 { margin: 0 0 4px; color: #0f172a; letter-spacing: 0.4px; }
+    p { line-height: 1.5; }
+    h2 { color: #1e3a5f; border-bottom: 2px solid #bfdbfe; padding-bottom: 4px; margin-top: 24px; }
+    .meta { color: #475569; margin-top: -4px; }
     .job { margin-bottom: 16px; }
+    ul { margin-top: 8px; }
+    a { color: #1d4ed8; text-decoration: none; }
+    a:hover { text-decoration: underline; }
     """
 
     one_column_minimal_css = """
-    body { font-family: 'Segoe UI', sans-serif; background: #ffffff; margin: 0; padding: 20px; }
-    .cv { max-width: 820px; margin: auto; }
-    h1 { letter-spacing: 1px; }
-    h2 { margin-top: 20px; color: #1f4e79; }
-    .meta { color: #6b7280; margin-top: -6px; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f8fafc; margin: 0; padding: 20px; color: #1e293b; }
+    .cv { max-width: 840px; margin: auto; background: #ffffff; border-left: 6px solid #1e3a5f; padding: 24px 28px; }
+    h1 { letter-spacing: 0.8px; margin-bottom: 4px; color: #0f172a; }
+    h2 { margin-top: 20px; color: #1e40af; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; }
+    .meta { color: #64748b; margin-top: -6px; }
     .job { margin-bottom: 14px; }
     ul { margin-top: 8px; }
+    a { color: #1d4ed8; }
     """
 
     two_column_css = """
-    body { font-family: Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 24px; }
-    .cv { max-width: 1100px; margin: auto; background: white; border-radius: 8px; overflow: hidden; }
-    .header { padding: 24px; border-bottom: 1px solid #ddd; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #e9eef5; margin: 0; padding: 24px; color: #1f2937; }
+    .cv { max-width: 1100px; margin: auto; background: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 8px 20px rgba(30,58,95,0.14); }
+    .header { padding: 24px; border-bottom: 1px solid #cbd5e1; background: linear-gradient(135deg, #1e3a5f, #274c77); color: #f8fafc; }
+    .header h1, .header h2, .header p, .header strong, .header a { color: #f8fafc; }
     .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; padding: 24px; }
-    h2 { margin-top: 0; border-bottom: 1px solid #ddd; padding-bottom: 4px; }
-    .meta { color: #555; margin-top: -6px; }
+    h2 { margin-top: 0; color: #1e3a5f; border-bottom: 2px solid #bfdbfe; padding-bottom: 4px; }
+    .meta { color: #475569; margin-top: -6px; }
     .job { margin-bottom: 14px; }
+    a { color: #93c5fd; }
+    .grid a { color: #1d4ed8; }
     """
 
     two_column_sidebar_css = """
-    body { font-family: 'Calibri', sans-serif; margin: 0; background: #eef2f7; padding: 24px; }
-    .cv { max-width: 1100px; margin: auto; display: grid; grid-template-columns: 1fr 2fr; background: white; }
-    .sidebar { background: #1f2937; color: #f9fafb; padding: 24px; }
+    body { font-family: 'Calibri', 'Segoe UI', sans-serif; margin: 0; background: #e6edf5; padding: 24px; color: #1f2937; }
+    .cv { max-width: 1100px; margin: auto; display: grid; grid-template-columns: 1fr 2fr; background: #ffffff; box-shadow: 0 8px 20px rgba(15,23,42,0.15); }
+    .sidebar { background: linear-gradient(180deg, #1e293b, #0f172a); color: #f8fafc; padding: 24px; }
     .content { padding: 24px; }
-    .sidebar h2 { color: #f9fafb; border-bottom: 1px solid #4b5563; }
-    h2 { border-bottom: 1px solid #ddd; padding-bottom: 4px; }
-    .meta { color: #555; margin-top: -6px; }
+    .sidebar h1 { color: #ffffff; }
+    .sidebar h2 { color: #bfdbfe; border-bottom: 1px solid #475569; }
+    h2 { color: #1e3a5f; border-bottom: 2px solid #bfdbfe; padding-bottom: 4px; }
+    .meta { color: #64748b; margin-top: -6px; }
     .job { margin-bottom: 14px; }
-    a { color: inherit; }
+    .sidebar a { color: #93c5fd; }
+    .content a { color: #1d4ed8; }
     """
 
     if template == "One Column - Minimal":
@@ -669,6 +684,326 @@ def build_html(cv: dict, template: str) -> str:
         </div>
     </body></html>
     """
+
+
+def pdf_safe_text(value: str) -> str:
+    return str(value).replace("\n", " ").encode("latin-1", "replace").decode("latin-1")
+
+
+def wrap_pdf_text(text: str, font_name: str, font_size: int, max_width: float) -> list[str]:
+    words = pdf_safe_text(text).split()
+    if not words:
+        return [""]
+
+    lines: list[str] = []
+    current = words[0]
+    for word in words[1:]:
+        candidate = f"{current} {word}"
+        if pdfmetrics.stringWidth(candidate, font_name, font_size) <= max_width:
+            current = candidate
+        else:
+            lines.append(current)
+            current = word
+    lines.append(current)
+    return lines
+
+
+def draw_pdf_wrapped_text(
+    pdf: canvas.Canvas,
+    text: str,
+    x: float,
+    y: float,
+    max_width: float,
+    bottom_margin: float,
+    top_reset: float,
+    font_name: str = "Helvetica",
+    font_size: int = 10,
+    leading: int = 13,
+) -> float:
+    pdf.setFont(font_name, font_size)
+    for line in wrap_pdf_text(text, font_name, font_size, max_width):
+        if y < bottom_margin:
+            pdf.showPage()
+            y = top_reset
+            pdf.setFont(font_name, font_size)
+        pdf.drawString(x, y, line)
+        y -= leading
+    return y
+
+
+def draw_pdf_title(pdf: canvas.Canvas, title: str, x: float, y: float, font_size: int = 12) -> float:
+    pdf.setFillColor(colors.HexColor("#1E3A5F"))
+    pdf.setFont("Helvetica-Bold", font_size)
+    pdf.drawString(x, y, pdf_safe_text(title))
+    pdf.setStrokeColor(colors.HexColor("#BFD7ED"))
+    pdf.setLineWidth(1)
+    pdf.line(x, y - 3, x + 120, y - 3)
+    pdf.setFillColor(colors.black)
+    return y - 16
+
+
+def build_pdf_one_column(cv: dict) -> bytes:
+    buffer = BytesIO()
+    pdf = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+    left = 40
+    right = width - 40
+    content_width = right - left
+    top = height - 50
+    bottom = 45
+    y = top
+
+    pdf.setFillColor(colors.HexColor("#1E3A5F"))
+    pdf.setStrokeColor(colors.HexColor("#1E3A5F"))
+    pdf.setLineWidth(3)
+    pdf.line(left, y + 8, right, y + 8)
+    pdf.setFont("Helvetica-Bold", 18)
+    pdf.drawString(left, y, pdf_safe_text(cv.get("full_name", "")))
+    y -= 22
+    pdf.setFillColor(colors.HexColor("#334155"))
+    y = draw_pdf_wrapped_text(
+        pdf,
+        cv.get("headline", ""),
+        left,
+        y,
+        content_width,
+        bottom,
+        top,
+        font_name="Helvetica",
+        font_size=11,
+        leading=14,
+    )
+    y -= 6
+
+    pdf.setFillColor(colors.HexColor("#0F172A"))
+    contact_line = (
+        f"Location: {cv.get('location', '')} | Phone: {cv.get('phone', '')} | "
+        f"Email: {cv.get('email', '')}"
+    )
+    y = draw_pdf_wrapped_text(pdf, contact_line, left, y, content_width, bottom, top)
+    pdf.setFillColor(colors.HexColor("#1D4ED8"))
+    links_line = f"LinkedIn: {cv.get('linkedin', '')} | GitHub: {cv.get('github', '')}"
+    y = draw_pdf_wrapped_text(pdf, links_line, left, y, content_width, bottom, top)
+    pdf.setFillColor(colors.black)
+    y -= 8
+
+    y = draw_pdf_title(pdf, "Profile", left, y)
+    y = draw_pdf_wrapped_text(pdf, cv.get("profile_summary", ""), left, y, content_width, bottom, top)
+    y -= 6
+
+    y = draw_pdf_title(pdf, "Core Competencies", left, y)
+    for item in cv.get("core_competencies", []):
+        y = draw_pdf_wrapped_text(pdf, f"- {item}", left, y, content_width, bottom, top)
+    y -= 6
+
+    y = draw_pdf_title(pdf, "Professional Experience", left, y)
+    for exp in cv.get("experience", []):
+        y = draw_pdf_wrapped_text(
+            pdf,
+            f"{exp.get('role', '')} - {exp.get('organization', '')} | {exp.get('period', '')}",
+            left,
+            y,
+            content_width,
+            bottom,
+            top,
+            font_name="Helvetica-Bold",
+            font_size=10,
+            leading=13,
+        )
+        for bullet in exp.get("bullets", []):
+            y = draw_pdf_wrapped_text(pdf, f"  - {bullet}", left, y, content_width, bottom, top)
+        y -= 3
+
+    y = draw_pdf_title(pdf, "Education", left, y)
+    for item in cv.get("education", []):
+        y = draw_pdf_wrapped_text(pdf, f"- {item}", left, y, content_width, bottom, top)
+
+    y = draw_pdf_title(pdf, "Certifications", left, y)
+    for item in cv.get("certifications", []):
+        y = draw_pdf_wrapped_text(pdf, f"- {item}", left, y, content_width, bottom, top)
+
+    y = draw_pdf_title(pdf, "Languages", left, y)
+    for item in cv.get("languages", []):
+        y = draw_pdf_wrapped_text(pdf, f"- {item}", left, y, content_width, bottom, top)
+
+    y = draw_pdf_title(pdf, "Referees", left, y)
+    for idx, ref in enumerate(cv.get("referees", []), start=1):
+        ref_line = (
+            f"{idx}. {ref.get('name', '')} - {ref.get('title', '')} | "
+            f"Email: {ref.get('email', '')} | Phone: {ref.get('phone', '')}"
+        )
+        y = draw_pdf_wrapped_text(pdf, ref_line, left, y, content_width, bottom, top)
+
+    pdf.save()
+    buffer.seek(0)
+    return buffer.getvalue()
+
+
+def build_pdf_two_column(cv: dict) -> bytes:
+    buffer = BytesIO()
+    pdf = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+
+    margin = 35
+    gap = 18
+    top = height - 45
+    bottom = 45
+    left_x = margin
+    left_width = (width - (2 * margin) - gap) * 0.62
+    right_x = left_x + left_width + gap
+    right_width = width - right_x - margin
+
+    header_height = 28
+    pdf.setFillColor(colors.HexColor("#1E3A5F"))
+    pdf.rect(left_x, top - header_height, width - (2 * margin), header_height, fill=1, stroke=0)
+    pdf.setFillColor(colors.white)
+    pdf.setFont("Helvetica-Bold", 16)
+    pdf.drawString(left_x, top, pdf_safe_text(cv.get("full_name", "")))
+    pdf.setFont("Helvetica", 10)
+    pdf.drawString(left_x, top - 16, pdf_safe_text(cv.get("headline", "")))
+    pdf.setFillColor(colors.black)
+
+    y_left = top - 38
+    y_right = top - 6
+
+    pdf.setFillColor(colors.HexColor("#F1F5F9"))
+    pdf.rect(right_x - 8, bottom - 4, right_width + 12, y_right - (bottom - 4), fill=1, stroke=0)
+    pdf.setFillColor(colors.black)
+
+    y_left = draw_pdf_title(pdf, "Profile", left_x, y_left)
+    y_left = draw_pdf_wrapped_text(
+        pdf, cv.get("profile_summary", ""), left_x, y_left, left_width, bottom, top
+    )
+    y_left -= 6
+
+    y_left = draw_pdf_title(pdf, "Professional Experience", left_x, y_left)
+    for exp in cv.get("experience", []):
+        y_left = draw_pdf_wrapped_text(
+            pdf,
+            f"{exp.get('role', '')} - {exp.get('organization', '')} | {exp.get('period', '')}",
+            left_x,
+            y_left,
+            left_width,
+            bottom,
+            top,
+            font_name="Helvetica-Bold",
+            font_size=9,
+            leading=12,
+        )
+        for bullet in exp.get("bullets", []):
+            y_left = draw_pdf_wrapped_text(
+                pdf,
+                f"- {bullet}",
+                left_x,
+                y_left,
+                left_width,
+                bottom,
+                top,
+                font_name="Helvetica",
+                font_size=9,
+                leading=12,
+            )
+        y_left -= 3
+
+    y_left = draw_pdf_title(pdf, "Education", left_x, y_left)
+    for item in cv.get("education", []):
+        y_left = draw_pdf_wrapped_text(pdf, f"- {item}", left_x, y_left, left_width, bottom, top)
+
+    y_right = draw_pdf_title(pdf, "Contact", right_x, y_right)
+    y_right = draw_pdf_wrapped_text(
+        pdf,
+        f"Location: {cv.get('location', '')}",
+        right_x,
+        y_right,
+        right_width,
+        bottom,
+        top,
+        font_size=9,
+        leading=12,
+    )
+    y_right = draw_pdf_wrapped_text(
+        pdf,
+        f"Phone: {cv.get('phone', '')}",
+        right_x,
+        y_right,
+        right_width,
+        bottom,
+        top,
+        font_size=9,
+        leading=12,
+    )
+    y_right = draw_pdf_wrapped_text(
+        pdf,
+        f"Email: {cv.get('email', '')}",
+        right_x,
+        y_right,
+        right_width,
+        bottom,
+        top,
+        font_size=9,
+        leading=12,
+    )
+    y_right = draw_pdf_wrapped_text(
+        pdf,
+        f"LinkedIn: {cv.get('linkedin', '')}",
+        right_x,
+        y_right,
+        right_width,
+        bottom,
+        top,
+        font_size=9,
+        leading=12,
+    )
+    y_right = draw_pdf_wrapped_text(
+        pdf,
+        f"GitHub: {cv.get('github', '')}",
+        right_x,
+        y_right,
+        right_width,
+        bottom,
+        top,
+        font_size=9,
+        leading=12,
+    )
+    y_right -= 6
+
+    y_right = draw_pdf_title(pdf, "Core Competencies", right_x, y_right)
+    for item in cv.get("core_competencies", []):
+        y_right = draw_pdf_wrapped_text(
+            pdf, f"- {item}", right_x, y_right, right_width, bottom, top, font_size=9, leading=12
+        )
+
+    y_right -= 4
+    y_right = draw_pdf_title(pdf, "Certifications", right_x, y_right)
+    for item in cv.get("certifications", []):
+        y_right = draw_pdf_wrapped_text(
+            pdf, f"- {item}", right_x, y_right, right_width, bottom, top, font_size=9, leading=12
+        )
+
+    y_right -= 4
+    y_right = draw_pdf_title(pdf, "Languages", right_x, y_right)
+    for item in cv.get("languages", []):
+        y_right = draw_pdf_wrapped_text(
+            pdf, f"- {item}", right_x, y_right, right_width, bottom, top, font_size=9, leading=12
+        )
+
+    y_right -= 4
+    y_right = draw_pdf_title(pdf, "Referees", right_x, y_right)
+    for ref in cv.get("referees", []):
+        text = f"- {ref.get('name', '')}: {ref.get('title', '')}, {ref.get('phone', '')}"
+        y_right = draw_pdf_wrapped_text(
+            pdf, text, right_x, y_right, right_width, bottom, top, font_size=9, leading=12
+        )
+
+    pdf.save()
+    buffer.seek(0)
+    return buffer.getvalue()
+
+
+def build_pdf(cv: dict, template: str) -> bytes:
+    if "Two Column" in template:
+        return build_pdf_two_column(cv)
+    return build_pdf_one_column(cv)
 
 
 def cv_editor(profile_id: int, selected_version: dict) -> None:
@@ -770,14 +1105,28 @@ def download_section(cv: dict, suggested_name: str) -> None:
         ],
     )
     html_output = build_html(cv, template)
-    filename = f"{suggested_name}_{template.lower().replace(' ', '_')}.html"
-    st.download_button(
-        "Download as HTML",
-        data=html_output,
-        file_name=filename,
-        mime="text/html",
-        use_container_width=True,
-    )
+    pdf_output = build_pdf(cv, template)
+    slug = template.lower().replace(" ", "_").replace("-", "")
+    html_filename = f"{suggested_name}_{slug}.html"
+    pdf_filename = f"{suggested_name}_{slug}.pdf"
+
+    col_html, col_pdf = st.columns(2)
+    with col_html:
+        st.download_button(
+            "Download as HTML",
+            data=html_output,
+            file_name=html_filename,
+            mime="text/html",
+            use_container_width=True,
+        )
+    with col_pdf:
+        st.download_button(
+            "Download as PDF",
+            data=pdf_output,
+            file_name=pdf_filename,
+            mime="application/pdf",
+            use_container_width=True,
+        )
 
 
 st.set_page_config(page_title="CV Portfolio Manager", page_icon="💼", layout="wide")
