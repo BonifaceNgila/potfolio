@@ -7,6 +7,7 @@ This project is a database-driven Streamlit CV portfolio with:
 - Multiple versions per profile
 - Public Visitor Page that shows the default CV
 - Downloadable CV templates in one-column and two-column layouts
+- Downloadable CV templates in HTML and PDF
 
 ## Run locally
 
@@ -33,7 +34,7 @@ The app will open in your browser.
 
 ## Downloads
 
-You can download CVs as HTML in these templates:
+You can download CVs as both HTML and PDF in these templates:
 
 - One Column - Classic
 - One Column - Minimal

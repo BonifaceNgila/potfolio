@@ -8,10 +8,20 @@ from datetime import datetime
 from io import BytesIO
 
 import streamlit as st
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfgen import canvas
+
+try:
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import A4
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfgen import canvas
+
+    REPORTLAB_AVAILABLE = True
+except ModuleNotFoundError:
+    colors = None
+    A4 = None
+    pdfmetrics = None
+    canvas = None
+    REPORTLAB_AVAILABLE = False
 
 
 def resolve_db_path() -> str:
@@ -691,6 +701,8 @@ def pdf_safe_text(value: str) -> str:
 
 
 def wrap_pdf_text(text: str, font_name: str, font_size: int, max_width: float) -> list[str]:
+    if not REPORTLAB_AVAILABLE:
+        return [pdf_safe_text(text)]
     words = pdf_safe_text(text).split()
     if not words:
         return [""]
@@ -709,7 +721,7 @@ def wrap_pdf_text(text: str, font_name: str, font_size: int, max_width: float) -
 
 
 def draw_pdf_wrapped_text(
-    pdf: canvas.Canvas,
+    pdf,
     text: str,
     x: float,
     y: float,
@@ -731,7 +743,7 @@ def draw_pdf_wrapped_text(
     return y
 
 
-def draw_pdf_title(pdf: canvas.Canvas, title: str, x: float, y: float, font_size: int = 12) -> float:
+def draw_pdf_title(pdf, title: str, x: float, y: float, font_size: int = 12) -> float:
     pdf.setFillColor(colors.HexColor("#1E3A5F"))
     pdf.setFont("Helvetica-Bold", font_size)
     pdf.drawString(x, y, pdf_safe_text(title))
@@ -743,6 +755,8 @@ def draw_pdf_title(pdf: canvas.Canvas, title: str, x: float, y: float, font_size
 
 
 def build_pdf_one_column(cv: dict) -> bytes:
+    if not REPORTLAB_AVAILABLE:
+        return b""
     buffer = BytesIO()
     pdf = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
@@ -840,6 +854,8 @@ def build_pdf_one_column(cv: dict) -> bytes:
 
 
 def build_pdf_two_column(cv: dict) -> bytes:
+    if not REPORTLAB_AVAILABLE:
+        return b""
     buffer = BytesIO()
     pdf = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
@@ -1001,6 +1017,8 @@ def build_pdf_two_column(cv: dict) -> bytes:
 
 
 def build_pdf(cv: dict, template: str) -> bytes:
+    if not REPORTLAB_AVAILABLE:
+        return b""
     if "Two Column" in template:
         return build_pdf_two_column(cv)
     return build_pdf_one_column(cv)
@@ -1105,7 +1123,7 @@ def download_section(cv: dict, suggested_name: str) -> None:
         ],
     )
     html_output = build_html(cv, template)
-    pdf_output = build_pdf(cv, template)
+    pdf_output = build_pdf(cv, template) if REPORTLAB_AVAILABLE else b""
     slug = template.lower().replace(" ", "_").replace("-", "")
     html_filename = f"{suggested_name}_{slug}.html"
     pdf_filename = f"{suggested_name}_{slug}.pdf"
@@ -1120,13 +1138,17 @@ def download_section(cv: dict, suggested_name: str) -> None:
             use_container_width=True,
         )
     with col_pdf:
-        st.download_button(
-            "Download as PDF",
-            data=pdf_output,
-            file_name=pdf_filename,
-            mime="application/pdf",
-            use_container_width=True,
-        )
+        if REPORTLAB_AVAILABLE:
+            st.download_button(
+                "Download as PDF",
+                data=pdf_output,
+                file_name=pdf_filename,
+                mime="application/pdf",
+                use_container_width=True,
+            )
+        else:
+            st.button("Download as PDF", disabled=True, use_container_width=True)
+            st.caption("PDF export unavailable: install `reportlab` from requirements.")
 
 
 st.set_page_config(page_title="CV Portfolio Manager", page_icon="💼", layout="wide")
