@@ -1620,6 +1620,62 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
     pdf.roundRect(right_x - 4, bottom - 4, right_width + 8, column_height, 18, fill=1, stroke=0)
     pdf.setFillColor(text_color)
 
+    y_left = hero_bottom - 16
+    y_left = ensure_pdf_space(pdf, y_left, 32, bottom, top)
+    y_left = draw_pdf_title(pdf, "Profile", left_x, y_left)
+    pdf.setFillColor(text_color)
+    y_left = draw_pdf_wrapped_text(
+        pdf, cv.get("profile_summary", ""), left_x, y_left, left_width, bottom, top
+    )
+    y_left -= 6
+
+    y_left = ensure_pdf_space(pdf, y_left, 36, bottom, top)
+    y_left = draw_pdf_title(pdf, "Professional Experience", left_x, y_left)
+    pdf.setFillColor(text_color)
+    for exp in cv.get("experience", []):
+        y_left = draw_pdf_wrapped_text(
+            pdf,
+            f"{exp.get('role', '')} - {exp.get('organization', '')} | {exp.get('period', '')}",
+            left_x,
+            y_left,
+            left_width,
+            bottom,
+            top,
+            font_name="Helvetica-Bold",
+            font_size=9,
+            leading=12,
+        )
+        for bullet in exp.get("bullets", []):
+            y_left = draw_pdf_wrapped_text(
+                pdf,
+                f"- {bullet}",
+                left_x,
+                y_left,
+                left_width,
+                bottom,
+                top,
+                font_name="Helvetica",
+                font_size=9,
+                leading=12,
+            )
+        y_left -= 3
+
+    y_left = ensure_pdf_space(pdf, y_left, 36, bottom, top)
+    y_left = draw_pdf_title(pdf, "Education", left_x, y_left)
+    pdf.setFillColor(text_color)
+    for item in cv.get("education", []):
+        record = normalize_education_record(item)
+        course = record.get("course", "")
+        institution = record.get("institution", "")
+        timeline = record.get("timeline", "")
+        parts = [part for part in [course, institution] if part]
+        if timeline:
+            parts.append(f"({timeline})")
+        entry_line = " - ".join(parts) if parts else ""
+        if entry_line:
+            entry_line = f"• {entry_line}"
+            y_left = draw_pdf_wrapped_text(pdf, entry_line, left_x, y_left, left_width, bottom, top)
+
     y_right = hero_bottom - 24
     y_right = ensure_pdf_space(pdf, y_right, 32, bottom, top)
     y_right = draw_pdf_title(pdf, "Contact", right_x, y_right)
@@ -1696,62 +1752,6 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
             y_right = draw_pdf_wrapped_text(
                 pdf, f"- {text}", right_x, y_right, right_width, bottom, top, font_size=9, leading=12
             )
-
-    y_left = hero_bottom - 16
-    y_left = ensure_pdf_space(pdf, y_left, 32, bottom, top)
-    y_left = draw_pdf_title(pdf, "Profile", left_x, y_left)
-    pdf.setFillColor(text_color)
-    y_left = draw_pdf_wrapped_text(
-        pdf, cv.get("profile_summary", ""), left_x, y_left, left_width, bottom, top
-    )
-    y_left -= 6
-
-    y_left = ensure_pdf_space(pdf, y_left, 36, bottom, top)
-    y_left = draw_pdf_title(pdf, "Professional Experience", left_x, y_left)
-    pdf.setFillColor(text_color)
-    for exp in cv.get("experience", []):
-        y_left = draw_pdf_wrapped_text(
-            pdf,
-            f"{exp.get('role', '')} - {exp.get('organization', '')} | {exp.get('period', '')}",
-            left_x,
-            y_left,
-            left_width,
-            bottom,
-            top,
-            font_name="Helvetica-Bold",
-            font_size=9,
-            leading=12,
-        )
-        for bullet in exp.get("bullets", []):
-            y_left = draw_pdf_wrapped_text(
-                pdf,
-                f"- {bullet}",
-                left_x,
-                y_left,
-                left_width,
-                bottom,
-                top,
-                font_name="Helvetica",
-                font_size=9,
-                leading=12,
-            )
-        y_left -= 3
-
-    y_left = ensure_pdf_space(pdf, y_left, 36, bottom, top)
-    y_left = draw_pdf_title(pdf, "Education", left_x, y_left)
-    pdf.setFillColor(text_color)
-    for item in cv.get("education", []):
-        record = normalize_education_record(item)
-        course = record.get("course", "")
-        institution = record.get("institution", "")
-        timeline = record.get("timeline", "")
-        parts = [part for part in [course, institution] if part]
-        if timeline:
-            parts.append(f"({timeline})")
-        entry_line = " - ".join(parts) if parts else ""
-        if entry_line:
-            entry_line = f"• {entry_line}"
-            y_left = draw_pdf_wrapped_text(pdf, entry_line, left_x, y_left, left_width, bottom, top)
 
     pdf.save()
     buffer.seek(0)
