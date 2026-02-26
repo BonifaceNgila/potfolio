@@ -1,6 +1,12 @@
-# Python CV Portfolio
+# Python CV Portfolio Manager
 
-This project presents Boniface Mutisya Ngila's CV as a clean, interactive Python portfolio using Streamlit.
+This project is a database-driven Streamlit CV portfolio with:
+
+- Editable CV content
+- Multiple profiles (e.g., IAM CV, DevOps CV, General CV)
+- Multiple versions per profile
+- Public Visitor Page that shows the default CV
+- Downloadable CV templates in one-column and two-column layouts
 
 ## Run locally
 
@@ -19,7 +25,22 @@ streamlit run app.py
 
 The app will open in your browser.
 
-## Customize
+## How it works
 
-- Update LinkedIn and GitHub URLs in `app.py`.
-- Adjust sections as your experience grows.
+- **Visitor Page:** Displays the current default profile CV.
+- **Editor:** Create and manage profiles, set default profile, edit CV fields, and save multiple versions.
+- **Database:** Uses SQLite (`cv_portfolio.db`) created automatically on first run.
+
+## Downloads
+
+You can download CVs as HTML in these templates:
+
+- One Column - Classic
+- One Column - Minimal
+- Two Column - Professional
+- Two Column - Sidebar
+
+## Editing format notes
+
+- **Experience:** Each job block starts with `Role || Organization || Period`, then bullet lines starting with `-`.
+- **Referees:** One line per referee in this format: `Name || Title || Email || Phone`.
