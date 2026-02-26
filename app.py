@@ -1504,55 +1504,6 @@ def build_pdf_two_column(cv: dict) -> bytes:
     pdf.rect(right_x - 8, bottom - 4, right_width + 12, y_right - (bottom - 4), fill=1, stroke=0)
     pdf.setFillColor(colors.black)
 
-    y_left = draw_pdf_title(pdf, "Profile", left_x, y_left)
-    y_left = draw_pdf_wrapped_text(
-        pdf, cv.get("profile_summary", ""), left_x, y_left, left_width, bottom, top
-    )
-    y_left -= 6
-
-    y_left = draw_pdf_title(pdf, "Professional Experience", left_x, y_left)
-    for exp in cv.get("experience", []):
-        y_left = draw_pdf_wrapped_text(
-            pdf,
-            f"{exp.get('role', '')} - {exp.get('organization', '')} | {exp.get('period', '')}",
-            left_x,
-            y_left,
-            left_width,
-            bottom,
-            top,
-            font_name="Helvetica-Bold",
-            font_size=9,
-            leading=12,
-        )
-        for bullet in exp.get("bullets", []):
-            y_left = draw_pdf_wrapped_text(
-                pdf,
-                f"- {bullet}",
-                left_x,
-                y_left,
-                left_width,
-                bottom,
-                top,
-                font_name="Helvetica",
-                font_size=9,
-                leading=12,
-            )
-        y_left -= 3
-
-    y_left = draw_pdf_title(pdf, "Education", left_x, y_left)
-    for item in cv.get("education", []):
-        record = normalize_education_record(item)
-        course = record.get("course", "")
-        institution = record.get("institution", "")
-        timeline = record.get("timeline", "")
-        parts = [part for part in [course, institution] if part]
-        if timeline:
-            parts.append(f"({timeline})")
-        entry_line = " - ".join(parts) if parts else ""
-        if entry_line:
-            entry_line = f"• {entry_line}"
-        y_left = draw_pdf_wrapped_text(pdf, entry_line, left_x, y_left, left_width, bottom, top)
-
     y_right = draw_pdf_title(pdf, "Contact", right_x, y_right)
     y_right = draw_pdf_wrapped_text(
         pdf,
@@ -1655,6 +1606,55 @@ def build_pdf_two_column(cv: dict) -> bytes:
         y_right = draw_pdf_wrapped_text(
             pdf, text, right_x, y_right, right_width, bottom, top, font_size=9, leading=12
         )
+
+    y_left = draw_pdf_title(pdf, "Profile", left_x, y_left)
+    y_left = draw_pdf_wrapped_text(
+        pdf, cv.get("profile_summary", ""), left_x, y_left, left_width, bottom, top
+    )
+    y_left -= 6
+
+    y_left = draw_pdf_title(pdf, "Professional Experience", left_x, y_left)
+    for exp in cv.get("experience", []):
+        y_left = draw_pdf_wrapped_text(
+            pdf,
+            f"{exp.get('role', '')} - {exp.get('organization', '')} | {exp.get('period', '')}",
+            left_x,
+            y_left,
+            left_width,
+            bottom,
+            top,
+            font_name="Helvetica-Bold",
+            font_size=9,
+            leading=12,
+        )
+        for bullet in exp.get("bullets", []):
+            y_left = draw_pdf_wrapped_text(
+                pdf,
+                f"- {bullet}",
+                left_x,
+                y_left,
+                left_width,
+                bottom,
+                top,
+                font_name="Helvetica",
+                font_size=9,
+                leading=12,
+            )
+        y_left -= 3
+
+    y_left = draw_pdf_title(pdf, "Education", left_x, y_left)
+    for item in cv.get("education", []):
+        record = normalize_education_record(item)
+        course = record.get("course", "")
+        institution = record.get("institution", "")
+        timeline = record.get("timeline", "")
+        parts = [part for part in [course, institution] if part]
+        if timeline:
+            parts.append(f"({timeline})")
+        entry_line = " - ".join(parts) if parts else ""
+        if entry_line:
+            entry_line = f"• {entry_line}"
+        y_left = draw_pdf_wrapped_text(pdf, entry_line, left_x, y_left, left_width, bottom, top)
 
     pdf.save()
     buffer.seek(0)
