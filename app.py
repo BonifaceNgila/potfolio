@@ -609,11 +609,22 @@ def build_html(cv: dict, template: str) -> str:
     two_column_css = """
     body { font-family: 'Segoe UI', Arial, sans-serif; background: #e9eef5; margin: 0; padding: 24px; color: #1f2937; }
     .cv { max-width: 1100px; margin: auto; background: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 8px 20px rgba(30,58,95,0.14); }
-    .header { padding: 24px; border-bottom: 1px solid #cbd5e1; background: linear-gradient(135deg, #1e3a5f, #274c77); color: #f8fafc; }
-    .header h1, .header h2, .header p, .header strong, .header a { color: #f8fafc; }
-    .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; padding: 24px; }
-    h2 { margin-top: 0; color: #1e3a5f; border-bottom: 2px solid #bfdbfe; padding-bottom: 4px; }
-    .meta { color: #475569; margin-top: -6px; }
+    .header { padding: 28px 32px; border-bottom: 1px solid #cbd5e1; background: linear-gradient(135deg, #1e3a5f, #274c77); color: #f8fafc; }
+    .header-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; align-items: end; }
+    .header-main h1 { margin: 0; font-size: 34px; line-height: 1.05; letter-spacing: 0.6px; color: #ffffff; }
+    .headline { margin: 8px 0 0 0; font-size: 15px; color: #dbeafe; font-weight: 500; }
+    .header-contact { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.24); border-radius: 8px; padding: 10px 12px; font-size: 13px; }
+    .header-contact p { margin: 0 0 6px 0; line-height: 1.4; color: #f8fafc; }
+    .header-contact strong, .header-contact a { color: #ffffff; }
+    .grid { display: grid; grid-template-columns: 1.85fr 1fr; gap: 20px; padding: 24px; }
+    .main-panel { background: #ffffff; border: 1px solid #dbe5f0; border-radius: 8px; padding: 16px 18px; }
+    .side-panel { background: #f8fbff; border: 1px solid #d6e3f2; border-radius: 8px; padding: 16px 16px; }
+    h2 { margin: 0 0 10px 0; color: #1e3a5f; border-bottom: 2px solid #bfdbfe; padding-bottom: 4px; font-size: 22px; }
+    h4 { margin: 0 0 4px 0; color: #0f172a; }
+    p { line-height: 1.45; }
+    ul { margin: 8px 0 12px 18px; padding: 0; }
+    li { margin-bottom: 6px; }
+    .meta { color: #475569; margin-top: -4px; }
     .job { margin-bottom: 14px; }
     a { color: #93c5fd; }
     .grid a { color: #1d4ed8; }
@@ -653,10 +664,21 @@ def build_html(cv: dict, template: str) -> str:
         <html><head><meta charset='UTF-8'><style>{two_column_css}</style></head>
         <body>
             <div class='cv'>
-                <div class='header'><h1>{name}</h1><p>{headline}</p>{contact}{links}</div>
+                <div class='header'>
+                    <div class='header-grid'>
+                        <div class='header-main'>
+                            <h1>{name}</h1>
+                            <p class='headline'>{headline}</p>
+                        </div>
+                        <div class='header-contact'>
+                            {contact}
+                            {links}
+                        </div>
+                    </div>
+                </div>
                 <div class='grid'>
-                    <div>{section_main}</div>
-                    <div>{section_side}</div>
+                    <div class='main-panel'>{section_main}</div>
+                    <div class='side-panel'>{section_side}</div>
                 </div>
             </div>
         </body></html>
@@ -860,28 +882,49 @@ def build_pdf_two_column(cv: dict) -> bytes:
     pdf = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
 
-    margin = 35
-    gap = 18
-    top = height - 45
+    margin = 32
+    gap = 16
+    top = height - 28
     bottom = 45
     left_x = margin
     left_width = (width - (2 * margin) - gap) * 0.62
     right_x = left_x + left_width + gap
     right_width = width - right_x - margin
 
-    header_height = 28
+    header_height = 64
+    header_bottom = top - header_height
     pdf.setFillColor(colors.HexColor("#1E3A5F"))
-    pdf.rect(left_x, top - header_height, width - (2 * margin), header_height, fill=1, stroke=0)
+    pdf.rect(left_x, header_bottom, width - (2 * margin), header_height, fill=1, stroke=0)
     pdf.setFillColor(colors.white)
-    pdf.setFont("Helvetica-Bold", 16)
-    pdf.drawString(left_x, top, pdf_safe_text(cv.get("full_name", "")))
+    pdf.setFont("Helvetica-Bold", 18)
+    pdf.drawString(left_x + 12, top - 24, pdf_safe_text(cv.get("full_name", "")))
     pdf.setFont("Helvetica", 10)
-    pdf.drawString(left_x, top - 16, pdf_safe_text(cv.get("headline", "")))
+    pdf.drawString(left_x + 12, top - 42, pdf_safe_text(cv.get("headline", "")))
+
+    contact_y = top - 20
+    pdf.setFont("Helvetica", 8)
+    pdf.drawRightString(
+        width - margin - 12,
+        contact_y,
+        pdf_safe_text(f"{cv.get('location', '')} | {cv.get('phone', '')}"),
+    )
+    pdf.drawRightString(
+        width - margin - 12,
+        contact_y - 11,
+        pdf_safe_text(f"{cv.get('email', '')}"),
+    )
+    pdf.drawRightString(
+        width - margin - 12,
+        contact_y - 22,
+        pdf_safe_text("LinkedIn | GitHub"),
+    )
     pdf.setFillColor(colors.black)
 
-    y_left = top - 38
-    y_right = top - 6
+    y_left = header_bottom - 16
+    y_right = header_bottom - 16
 
+    pdf.setFillColor(colors.HexColor("#F8FBFF"))
+    pdf.rect(left_x - 2, bottom - 4, left_width + 6, y_left - (bottom - 4), fill=1, stroke=0)
     pdf.setFillColor(colors.HexColor("#F1F5F9"))
     pdf.rect(right_x - 8, bottom - 4, right_width + 12, y_right - (bottom - 4), fill=1, stroke=0)
     pdf.setFillColor(colors.black)
