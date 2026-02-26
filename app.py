@@ -188,6 +188,17 @@ def default_cv_data() -> dict:
     }
 
 
+TEXT_FORMATTERS = [
+    "bold",
+    "italic",
+    "code",
+    "link",
+    "ordered_list",
+    "unordered_list",
+    "quote",
+]
+
+
 def get_conn() -> sqlite3.Connection:
     parent_dir = os.path.dirname(DB_PATH)
     if parent_dir:
@@ -1555,11 +1566,17 @@ def cv_editor(profile_id: int, selected_version: dict) -> None:
         github = st.text_input("GitHub URL", value=cv.get("github", ""))
         version_name = st.text_input("Version Name", value=selected_version["version_name"])
 
-    profile_summary = st.text_area("Profile Summary", value=cv.get("profile_summary", ""), height=140)
+    profile_summary = st.text_area(
+        "Profile Summary",
+        value=cv.get("profile_summary", ""),
+        height=140,
+        text_formatters=TEXT_FORMATTERS,
+    )
     competencies_text = st.text_area(
         "Core Competencies (one per line)",
         value=list_to_text(cv.get("core_competencies", [])),
         height=160,
+        text_formatters=TEXT_FORMATTERS,
     )
 
     st.caption("Experience format per block: Role || Organization || Period, then bullet lines starting with '-'.")
@@ -1567,6 +1584,7 @@ def cv_editor(profile_id: int, selected_version: dict) -> None:
         "Professional Experience",
         value=experience_to_text(cv.get("experience", [])),
         height=260,
+        text_formatters=TEXT_FORMATTERS,
     )
 
     st.caption("Education format: Course || Institution || Timeline")
@@ -1574,16 +1592,19 @@ def cv_editor(profile_id: int, selected_version: dict) -> None:
         "Education",
         value=education_to_text(cv.get("education", [])),
         height=140,
+        text_formatters=TEXT_FORMATTERS,
     )
     certifications_text = st.text_area(
         "Certifications (one per line)",
         value=list_to_text(cv.get("certifications", [])),
         height=120,
+        text_formatters=TEXT_FORMATTERS,
     )
     languages_text = st.text_area(
         "Languages (one per line)",
         value=list_to_text(cv.get("languages", [])),
         height=90,
+        text_formatters=TEXT_FORMATTERS,
     )
 
     st.caption("Referees format: Name || Organization || Position || Email || Phone")
@@ -1591,6 +1612,7 @@ def cv_editor(profile_id: int, selected_version: dict) -> None:
         "Referees",
         value=referees_to_text(cv.get("referees", [])),
         height=150,
+        text_formatters=TEXT_FORMATTERS,
     )
 
     new_cv = {
