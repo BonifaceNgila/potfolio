@@ -693,27 +693,115 @@ def build_html(cv: dict, template: str) -> str:
     referees_html = html_referees(cv.get('referees', []))
 
     one_column_css = """
-    body { font-family: 'Segoe UI', Arial, sans-serif; background: #eaf0f7; margin: 0; padding: 26px; color: #1f2937; }
-    .cv { max-width: 940px; margin: auto; background: #ffffff; border-radius: 12px; box-shadow: 0 10px 24px rgba(30,58,95,0.14); overflow: hidden; }
-    .hero { background: linear-gradient(135deg, #1e3a5f, #274c77); color: #f8fafc; padding: 26px 30px; }
-    .hero h1 { margin: 0; color: #ffffff; font-size: 34px; line-height: 1.05; letter-spacing: 0.6px; }
-    .hero .headline { margin: 8px 0 12px; color: #dbeafe; font-size: 15px; }
-    .hero-meta { font-size: 13px; line-height: 1.5; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22); border-radius: 8px; padding: 10px 12px; }
-    .hero a { color: #ffffff; }
-    .content { padding: 22px 24px 26px; }
-    .section-block { background: #ffffff; border: 1px solid #dbe5f0; border-radius: 8px; padding: 14px 16px; margin-bottom: 14px; }
-    p { line-height: 1.5; }
-    h2 { color: #1e3a5f; border-bottom: 2px solid #bfdbfe; padding-bottom: 4px; margin-top: 14px; }
-    .meta { color: #475569; margin-top: -4px; }
-    .job { margin-bottom: 16px; }
-    ul { margin-top: 8px; padding-left: 18px; }
+    body {
+        font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
+        margin: 0;
+        background: radial-gradient(circle at 10% 10%, rgba(56,189,248,0.15), transparent 30%),
+            radial-gradient(circle at 85% 0%, rgba(236,72,153,0.18), transparent 28%),
+            #030712;
+        color: #e2e8f0;
+        min-height: 100vh;
+    }
+    body::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background: linear-gradient(120deg, rgba(15,23,42,0.9), rgba(2,6,23,0.8));
+        pointer-events: none;
+        z-index: -1;
+    }
+    .cv {
+        max-width: 1040px;
+        margin: 32px auto 48px;
+        background: rgba(6,11,30,0.85);
+        border-radius: 28px;
+        padding: 32px;
+        box-shadow: 0 30px 60px rgba(2,6,23,0.65), 0 12px 20px rgba(59,130,246,0.25);
+        border: 1px solid rgba(59,130,246,0.35);
+    }
+    .hero {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 32px;
+        align-items: center;
+        padding: 36px;
+        border-radius: 22px;
+        background: linear-gradient(135deg, rgba(14,165,233,0.25), rgba(79,70,229,0.3));
+        border: 1px solid rgba(255,255,255,0.4);
+        position: relative;
+        overflow: hidden;
+    }
+    .hero::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at 30% 20%, rgba(236,72,153,0.4), transparent 45%),
+            radial-gradient(circle at 80% 20%, rgba(14,165,233,0.4), transparent 50%),
+            radial-gradient(circle at 50% 120%, rgba(59,130,246,0.2), transparent 60%);
+        opacity: 0.8;
+        pointer-events: none;
+    }
+    .hero > * {
+        position: relative;
+        z-index: 1;
+    }
+    .hero h1 {
+        margin: 0;
+        font-size: clamp(38px, 4vw, 48px);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+    }
+    .hero .headline {
+        margin: 14px 0 2px;
+        font-size: 17px;
+        color: #e0e7ff;
+    }
+    .hero-meta {
+        margin-top: 18px;
+        font-size: 14px;
+        line-height: 1.6;
+        background: rgba(15,23,42,0.65);
+        border-radius: 12px;
+        padding: 12px 16px;
+        border: 1px solid rgba(255,255,255,0.2);
+    }
+    .hero-meta strong {
+        color: #bfdbfe;
+    }
+    .hero-meta a {
+        color: #7dd3fc;
+        text-decoration: none;
+        font-weight: 600;
+    }
+    .content {
+        margin-top: 28px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 22px;
+    }
+    .section-block {
+        background: rgba(15,23,42,0.7);
+        border-radius: 18px;
+        padding: 24px;
+        border: 1px solid rgba(59,130,246,0.25);
+        min-height: 200px;
+    }
+    .section-block:nth-child(odd) {
+        border-color: rgba(236,72,153,0.35);
+    }
+    p { line-height: 1.7; color: #e2e8f0; }
+    .section-heading h2 { color: #f8fafc; }
+    ul {
+        margin-top: 12px;
+        padding-left: 22px;
+        color: #e2e8f0;
+    }
     li { margin-bottom: 6px; }
-    .referees-list { margin-top: 12px; padding-left: 0; }
-    .referees-list li { margin-bottom: 10px; list-style: none; }
-    .referee strong { display: block; text-transform: uppercase; letter-spacing: 0.4px; font-size: 16px; }
-    .referee-contact, .referee-title { display: block; font-size: 13px; color: #475569; margin-top: 2px; }
-    a { color: #1d4ed8; text-decoration: none; }
-    a:hover { text-decoration: underline; }
+    a { color: #38bdf8; }
+    @media (max-width: 640px) {
+        .cv { padding: 18px; }
+        .hero { padding: 24px; grid-template-columns: 1fr; text-align: center; }
+    }
     """
 
     one_column_minimal_css = """
@@ -1210,6 +1298,16 @@ def draw_pdf_title(pdf, title: str, x: float, y: float, font_size: int = 12) -> 
     return y - 16
 
 
+def draw_section_card(pdf, x: float, y: float, width: float, height: float, fill: colors.Color, border: colors.Color) -> float:
+    pdf.setFillColor(fill)
+    pdf.setStrokeColor(border)
+    pdf.setLineWidth(1)
+    pdf.roundRect(x, y - height, width, height, 12, fill=1, stroke=0)
+    pdf.setStrokeColor(border)
+    pdf.roundRect(x, y - height, width, height, 12, fill=0, stroke=1)
+    return y - height - 14
+
+
 def ensure_pdf_space(pdf, y: float, needed_height: float, bottom_margin: float, top_reset: float) -> float:
     if y - needed_height < bottom_margin:
         pdf.showPage()
@@ -1230,35 +1328,35 @@ def build_pdf_one_column(cv: dict) -> bytes:
     bottom = 45
     y = top
 
-    header_height = 72
-    header_bottom = y - 52
-    pdf.setFillColor(colors.HexColor("#1E3A5F"))
-    pdf.rect(left, header_bottom, content_width, header_height, fill=1, stroke=0)
+    pdf.setFillColor(colors.HexColor("#030712"))
+    pdf.rect(0, 0, width, height, fill=1, stroke=0)
+    hero_height = 120
+    hero_bottom = y - hero_height
+    pdf.setFillColor(colors.HexColor("#102a43"))
+    pdf.roundRect(left - 16, hero_bottom - 8, content_width + 32, hero_height + 16, 20, fill=1, stroke=0)
+    pdf.setFillColor(colors.HexColor("#1e3a8a"))
+    pdf.rect(left, hero_bottom + hero_height * 0.4, content_width * 0.68, hero_height * 0.5, fill=1, stroke=0)
     pdf.setFillColor(colors.white)
-    pdf.setFont("Helvetica-Bold", 18)
-    pdf.drawString(left + 12, y - 6, pdf_safe_text(cv.get("full_name", "")))
+    pdf.setFont("Helvetica-Bold", 22)
+    pdf.drawString(left + 8, hero_bottom + hero_height - 28, pdf_safe_text(cv.get("full_name", "")))
+    pdf.setFont("Helvetica", 12)
+    pdf.drawString(left + 8, hero_bottom + hero_height - 48, pdf_safe_text(cv.get("headline", "")))
     pdf.setFont("Helvetica", 10)
-    pdf.drawString(left + 12, y - 23, pdf_safe_text(cv.get("headline", "")))
-    y = header_bottom - 14
+    pdf.drawString(right - 160, hero_bottom + hero_height - 28, pdf_safe_text(f"Location: {cv.get('location', '')}"))
+    pdf.drawString(right - 160, hero_bottom + hero_height - 44, pdf_safe_text(f"Phone: {cv.get('phone', '')}"))
+    pdf.drawString(right - 160, hero_bottom + hero_height - 60, pdf_safe_text(f"Email: {cv.get('email', '')}"))
+    y = hero_bottom - 28
+    pdf.setFillColor(colors.HexColor("#e0f2fe"))
+    pdf.drawString(left, y + 8, pdf_safe_text(f"LinkedIn: {cv.get('linkedin', '')} | GitHub: {cv.get('github', '')}"))
+    y -= 16
+    pdf.setFillColor(colors.HexColor("#0f172a"))
+    pdf.rect(left - 12, bottom - 6, content_width + 24, y - bottom + 24, fill=1, stroke=0)
+    pdf.setStrokeColor(colors.HexColor("#1d4ed8"))
+    pdf.setLineWidth(1)
+    pdf.rect(left - 12, bottom - 6, content_width + 24, y - bottom + 24, fill=0, stroke=1)
+    y -= 12
 
-    pdf.setFillColor(colors.HexColor("#334155"))
-    y = draw_pdf_wrapped_text(
-        pdf,
-        f"Location: {cv.get('location', '')} | Phone: {cv.get('phone', '')} | Email: {cv.get('email', '')}",
-        left,
-        y,
-        content_width,
-        bottom,
-        top,
-        font_name="Helvetica",
-        font_size=10,
-        leading=13,
-    )
-    pdf.setFillColor(colors.HexColor("#1D4ED8"))
-    links_line = f"LinkedIn: {cv.get('linkedin', '')} | GitHub: {cv.get('github', '')}"
-    y = draw_pdf_wrapped_text(pdf, links_line, left, y, content_width, bottom, top)
-    pdf.setFillColor(colors.black)
-    y -= 6
+    pdf.setFillColor(colors.HexColor("#e2e8f0"))
 
     y = ensure_pdf_space(pdf, y, 40, bottom, top)
     y = draw_pdf_title(pdf, "Profile", left, y)
@@ -1349,6 +1447,9 @@ def build_pdf_two_column(cv: dict) -> bytes:
     pdf = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
 
+    pdf.setFillColor(colors.HexColor("#030712"))
+    pdf.rect(0, 0, width, height, fill=1, stroke=0)
+
     margin = 32
     gap = 16
     top = height - 28
@@ -1360,7 +1461,7 @@ def build_pdf_two_column(cv: dict) -> bytes:
 
     header_height = 64
     header_bottom = top - header_height
-    pdf.setFillColor(colors.HexColor("#1E3A5F"))
+    pdf.setFillColor(colors.HexColor("#102a43"))
     pdf.rect(left_x, header_bottom, width - (2 * margin), header_height, fill=1, stroke=0)
     pdf.setFillColor(colors.white)
     pdf.setFont("Helvetica-Bold", 18)
@@ -1380,15 +1481,22 @@ def build_pdf_two_column(cv: dict) -> bytes:
         contact_y - 11,
         pdf_safe_text(f"{cv.get('email', '')}"),
     )
+    pdf.drawString(left_x + 12, header_bottom + 8, pdf_safe_text(f"Location: {cv.get('location', '')}"))
+    pdf.drawString(left_x + 12, header_bottom + 24, pdf_safe_text(f"Phone: {cv.get('phone', '')}"))
+    pdf.drawString(left_x + 12, header_bottom + 40, pdf_safe_text(f"Email: {cv.get('email', '')}"))
     pdf.drawRightString(
         width - margin - 12,
-        contact_y - 22,
-        pdf_safe_text("LinkedIn | GitHub"),
+        header_bottom + 20,
+        pdf_safe_text(f"LinkedIn: {cv.get('linkedin', '')} | GitHub: {cv.get('github', '')}"),
     )
     pdf.setFillColor(colors.black)
 
     y_left = header_bottom - 16
     y_right = header_bottom - 16
+
+    pdf.setFillColor(colors.HexColor("#060b1e"))
+    pdf.roundRect(left_x - 6, bottom - 8, left_width + 12, y_left - bottom + 20, 16, fill=1, stroke=0)
+    pdf.roundRect(right_x - 8, bottom - 8, right_width + 16, y_right - bottom + 20, 16, fill=1, stroke=0)
 
     pdf.setFillColor(colors.HexColor("#F8FBFF"))
     pdf.rect(left_x - 2, bottom - 4, left_width + 6, y_left - (bottom - 4), fill=1, stroke=0)
