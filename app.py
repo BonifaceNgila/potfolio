@@ -481,19 +481,31 @@ def html_experience(experience: list[dict]) -> str:
 
 
 def html_referees(referees: list[dict]) -> str:
-    blocks = []
+    entries = []
     for ref in referees:
-        blocks.append(
+        name = html.escape(ref.get("name", ""))
+        title = html.escape(ref.get("title", ""))
+        email = html.escape(ref.get("email", ""))
+        phone = html.escape(ref.get("phone", ""))
+        details = []
+        if title:
+            details.append(f"<span class='referee-title'>{title}</span>")
+        if email:
+            details.append(f"<span class='referee-contact'>Email: {email}</span>")
+        if phone:
+            details.append(f"<span class='referee-contact'>Phone: {phone}</span>")
+        details_html = "".join(details)
+        entries.append(
             """
-            <li><strong>{name}</strong> — {title}<br>Email: {email} | Phone: {phone}</li>
-            """.format(
-                name=html.escape(ref.get("name", "")),
-                title=html.escape(ref.get("title", "")),
-                email=html.escape(ref.get("email", "")),
-                phone=html.escape(ref.get("phone", "")),
-            )
+            <li class='referee'>
+                <strong>{name}</strong>
+                {details}
+            </li>
+            """.format(name=name, details=details_html)
         )
-    return f"<ul>{''.join(blocks)}</ul>"
+    if not entries:
+        return ""
+    return f"<ul class='referees-list'>{''.join(entries)}</ul>"
 
 
 def build_html(cv: dict, template: str) -> str:
@@ -548,6 +560,10 @@ def build_html(cv: dict, template: str) -> str:
     .job { margin-bottom: 16px; }
     ul { margin-top: 8px; padding-left: 18px; }
     li { margin-bottom: 6px; }
+    .referees-list { margin-top: 12px; padding-left: 0; }
+    .referees-list li { margin-bottom: 10px; list-style: none; }
+    .referee strong { display: block; text-transform: uppercase; letter-spacing: 0.4px; font-size: 16px; }
+    .referee-contact, .referee-title { display: block; font-size: 13px; color: #475569; margin-top: 2px; }
     a { color: #1d4ed8; text-decoration: none; }
     a:hover { text-decoration: underline; }
     """
@@ -561,6 +577,9 @@ def build_html(cv: dict, template: str) -> str:
     .job { margin-bottom: 14px; }
     ul { margin-top: 8px; }
     a { color: #1d4ed8; }
+    .referees-list { margin-top: 10px; padding-left: 0; }
+    .referees-list li { margin-bottom: 8px; list-style: none; }
+    .referee-contact, .referee-title { display: block; font-size: 12px; color: #475569; }
     """
 
     two_column_css = """
@@ -585,6 +604,10 @@ def build_html(cv: dict, template: str) -> str:
     .job { margin-bottom: 14px; }
     a { color: #93c5fd; }
     .grid a { color: #1d4ed8; }
+    .referees-list { margin-top: 8px; padding-left: 0; }
+    .referees-list li { margin-bottom: 6px; list-style: none; }
+    .referee strong { display: block; font-size: 15px; }
+    .referee-contact, .referee-title { display: block; font-size: 13px; color: #475569; }
     """
 
     two_column_sidebar_css = """
@@ -599,6 +622,10 @@ def build_html(cv: dict, template: str) -> str:
     .job { margin-bottom: 14px; }
     .sidebar a { color: #93c5fd; }
     .content a { color: #1d4ed8; }
+    .referees-list { margin-top: 12px; padding-left: 0; }
+    .referees-list li { margin-bottom: 10px; list-style: none; }
+    .referee strong { display: block; font-size: 15px; }
+    .referee-contact, .referee-title { display: block; font-size: 12px; color: #dbeafe; }
     """
 
     two_column_sidebar_skillset_css = """
@@ -623,8 +650,10 @@ def build_html(cv: dict, template: str) -> str:
     .job { margin-bottom: 12px; }
     .job h4 { margin: 0; }
     .meta { color: #475569; margin-bottom: 8px; }
-    .referees-list { margin: 0; padding-left: 18px; }
-    .referees-list li { margin-bottom: 8px; }
+    .referees-list { margin: 0 0 8px 0; padding-left: 0; }
+    .referee { list-style: none; margin-bottom: 10px; }
+    .referee strong { display: block; font-size: 15px; }
+    .referee-contact, .referee-title { display: block; font-size: 13px; color: #f1f5f9; }
     """
 
     two_column_accent_css = """
@@ -669,7 +698,15 @@ def build_html(cv: dict, template: str) -> str:
     .section-body h4 { margin: 0; font-size: 16px; color: #111827; }
     .section-body .meta { font-size: 13px; color: #64748b; margin-top: 4px; }
     .main-area ul { padding-left: 20px; }
+    .referees-list { margin-top: 12px; padding-left: 0; }
+    .referees-list li { margin-bottom: 10px; list-style: none; }
+    .referee strong { display: block; font-size: 15px; }
+    .referee-contact, .referee-title { display: block; font-size: 13px; color: #475569; }
     .links-row { margin-top: 14px; font-size: 13px; color: #111827; letter-spacing: 0.4px; }
+    .referees-list { margin-top: 18px; padding-left: 0; }
+    .referee { list-style: none; margin-bottom: 10px; }
+    .referee strong { display: block; font-size: 16px; letter-spacing: 1px; }
+    .referee-contact, .referee-title { display: block; font-size: 13px; color: #4b5563; margin-top: 4px; }
     .divider { height: 1px; background: #e2e8f0; margin: 32px 0 18px; }
     """
 
@@ -835,6 +872,7 @@ def build_html(cv: dict, template: str) -> str:
         tech_html = html_list(technical_entries)
         education_html = html_list(cv.get("education", []))
         languages_html = html_list(cv.get("languages", []))
+        referees_html = html_referees(cv.get("referees", []))
         links_row = f"<div class='links-row'>{' | '.join(link_items)}</div>" if link_items else ""
 
         education_section = (
@@ -869,6 +907,14 @@ def build_html(cv: dict, template: str) -> str:
             </div>
             """ if languages_html else ""
         )
+        referees_section = (
+            f"""
+            <div class='section-body'>
+                <h2>Referees</h2>
+                {referees_html}
+            </div>
+            """ if referees_html else ""
+        )
 
         return f"""
         <html><head><meta charset='UTF-8'><style>{two_column_slate_css}</style></head>
@@ -902,6 +948,7 @@ def build_html(cv: dict, template: str) -> str:
                             <h2>Courses and Certificates</h2>
                             {html_list(cv.get('certifications', []))}
                         </div>
+                        {referees_section}
                     </div>
                 </div>
             </div>
