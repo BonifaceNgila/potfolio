@@ -1,4 +1,5 @@
 import html
+import hmac
 import json
 import os
 import re
@@ -1194,13 +1195,48 @@ def download_section(cv: dict, suggested_name: str) -> None:
             st.caption("PDF export unavailable: install `reportlab` from requirements.")
 
 
+def get_editor_password() -> str:
+    secret_password = st.secrets.get("editor_password", "")
+    if secret_password:
+        return str(secret_password)
+    return os.getenv("CV_EDITOR_PASSWORD", "")
+
+
+def render_editor_login() -> None:
+    st.subheader("Editor Login")
+    configured_password = get_editor_password()
+
+    if not configured_password:
+        st.warning("Editor password is not configured.")
+        st.info(
+            "Set `editor_password` in Streamlit secrets or set environment variable "
+            "`CV_EDITOR_PASSWORD`, then reload the app."
+        )
+        return
+
+    with st.form("editor_login_form"):
+        password = st.text_input("Password", type="password", placeholder="Enter editor password")
+        submitted = st.form_submit_button("Login", use_container_width=True)
+
+    if submitted:
+        if hmac.compare_digest(password, configured_password):
+            st.session_state["editor_authenticated"] = True
+            st.success("Login successful.")
+            st.rerun()
+        else:
+            st.error("Invalid password.")
+
+
 st.set_page_config(page_title="CV Portfolio Manager", page_icon="💼", layout="wide")
 init_db()
 
-st.sidebar.title("CV Portfolio")
-page = st.sidebar.radio("Navigation", ["Visitor Page", "Editor"], index=0)
+if "editor_authenticated" not in st.session_state:
+    st.session_state["editor_authenticated"] = False
 
-if page == "Visitor Page":
+st.sidebar.title("CV Portfolio")
+page = st.sidebar.radio("Navigation", ["Public View", "Editor"], index=0)
+
+if page == "Public View":
     st.sidebar.info("Public view of the default CV profile.")
     default_version = fetch_default_version()
     if not default_version:
@@ -1214,6 +1250,15 @@ if page == "Visitor Page":
     download_section(default_version["cv"], "default_cv")
 
 else:
+    if not st.session_state.get("editor_authenticated", False):
+        st.sidebar.warning("Login required for editor access.")
+        render_editor_login()
+        st.stop()
+
+    if st.sidebar.button("Logout", use_container_width=True):
+        st.session_state["editor_authenticated"] = False
+        st.rerun()
+
     st.sidebar.info("Create, edit, and version multiple CV profiles.")
     profiles = fetch_profiles()
 

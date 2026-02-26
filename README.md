@@ -28,9 +28,22 @@ The app will open in your browser.
 
 ## How it works
 
-- **Visitor Page:** Displays the current default profile CV.
+- **Public View:** Displays the current default profile CV.
 - **Editor:** Create and manage profiles, set default profile, edit CV fields, and save multiple versions.
 - **Database:** Uses SQLite (`cv_portfolio.db`) created automatically on first run.
+
+## Editor login
+
+Editor access requires a password. Configure one of the following:
+
+- Streamlit secrets: set `editor_password`
+- Environment variable: set `CV_EDITOR_PASSWORD`
+
+Example for Streamlit Cloud `secrets.toml`:
+
+```toml
+editor_password = "your-strong-password"
+```
 
 ## Downloads
 
