@@ -584,14 +584,21 @@ def build_html(cv: dict, template: str) -> str:
     """
 
     one_column_css = """
-    body { font-family: 'Segoe UI', Arial, sans-serif; background: #eef2f7; margin: 0; padding: 24px; color: #1f2937; }
-    .cv { max-width: 900px; margin: auto; background: #ffffff; padding: 30px; border-radius: 10px; border-top: 8px solid #1e3a5f; box-shadow: 0 6px 18px rgba(30,58,95,0.12); }
-    h1 { margin: 0 0 4px; color: #0f172a; letter-spacing: 0.4px; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #eaf0f7; margin: 0; padding: 26px; color: #1f2937; }
+    .cv { max-width: 940px; margin: auto; background: #ffffff; border-radius: 12px; box-shadow: 0 10px 24px rgba(30,58,95,0.14); overflow: hidden; }
+    .hero { background: linear-gradient(135deg, #1e3a5f, #274c77); color: #f8fafc; padding: 26px 30px; }
+    .hero h1 { margin: 0; color: #ffffff; font-size: 34px; line-height: 1.05; letter-spacing: 0.6px; }
+    .hero .headline { margin: 8px 0 12px; color: #dbeafe; font-size: 15px; }
+    .hero-meta { font-size: 13px; line-height: 1.5; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22); border-radius: 8px; padding: 10px 12px; }
+    .hero a { color: #ffffff; }
+    .content { padding: 22px 24px 26px; }
+    .section-block { background: #ffffff; border: 1px solid #dbe5f0; border-radius: 8px; padding: 14px 16px; margin-bottom: 14px; }
     p { line-height: 1.5; }
-    h2 { color: #1e3a5f; border-bottom: 2px solid #bfdbfe; padding-bottom: 4px; margin-top: 24px; }
+    h2 { color: #1e3a5f; border-bottom: 2px solid #bfdbfe; padding-bottom: 4px; margin-top: 14px; }
     .meta { color: #475569; margin-top: -4px; }
     .job { margin-bottom: 16px; }
-    ul { margin-top: 8px; }
+    ul { margin-top: 8px; padding-left: 18px; }
+    li { margin-bottom: 6px; }
     a { color: #1d4ed8; text-decoration: none; }
     a:hover { text-decoration: underline; }
     """
@@ -708,12 +715,18 @@ def build_html(cv: dict, template: str) -> str:
     <html><head><meta charset='UTF-8'><style>{one_column_css}</style></head>
     <body>
         <div class='cv'>
-            <h1>{name}</h1>
-            <p>{headline}</p>
-            {contact}
-            {links}
-            {section_main}
-            {section_side}
+            <div class='hero'>
+                <h1>{name}</h1>
+                <p class='headline'>{headline}</p>
+                <div class='hero-meta'>
+                    {contact}
+                    {links}
+                </div>
+            </div>
+            <div class='content'>
+                <div class='section-block'>{section_main}</div>
+                <div class='section-block'>{section_side}</div>
+            </div>
         </div>
     </body></html>
     """
@@ -777,6 +790,13 @@ def draw_pdf_title(pdf, title: str, x: float, y: float, font_size: int = 12) -> 
     return y - 16
 
 
+def ensure_pdf_space(pdf, y: float, needed_height: float, bottom_margin: float, top_reset: float) -> float:
+    if y - needed_height < bottom_margin:
+        pdf.showPage()
+        return top_reset
+    return y
+
+
 def build_pdf_one_column(cv: dict) -> bytes:
     if not REPORTLAB_AVAILABLE:
         return b""
@@ -790,51 +810,51 @@ def build_pdf_one_column(cv: dict) -> bytes:
     bottom = 45
     y = top
 
+    header_height = 72
+    header_bottom = y - 52
     pdf.setFillColor(colors.HexColor("#1E3A5F"))
-    pdf.setStrokeColor(colors.HexColor("#1E3A5F"))
-    pdf.setLineWidth(3)
-    pdf.line(left, y + 8, right, y + 8)
+    pdf.rect(left, header_bottom, content_width, header_height, fill=1, stroke=0)
+    pdf.setFillColor(colors.white)
     pdf.setFont("Helvetica-Bold", 18)
-    pdf.drawString(left, y, pdf_safe_text(cv.get("full_name", "")))
-    y -= 22
+    pdf.drawString(left + 12, y - 6, pdf_safe_text(cv.get("full_name", "")))
+    pdf.setFont("Helvetica", 10)
+    pdf.drawString(left + 12, y - 23, pdf_safe_text(cv.get("headline", "")))
+    y = header_bottom - 14
+
     pdf.setFillColor(colors.HexColor("#334155"))
     y = draw_pdf_wrapped_text(
         pdf,
-        cv.get("headline", ""),
+        f"Location: {cv.get('location', '')} | Phone: {cv.get('phone', '')} | Email: {cv.get('email', '')}",
         left,
         y,
         content_width,
         bottom,
         top,
         font_name="Helvetica",
-        font_size=11,
-        leading=14,
+        font_size=10,
+        leading=13,
     )
-    y -= 6
-
-    pdf.setFillColor(colors.HexColor("#0F172A"))
-    contact_line = (
-        f"Location: {cv.get('location', '')} | Phone: {cv.get('phone', '')} | "
-        f"Email: {cv.get('email', '')}"
-    )
-    y = draw_pdf_wrapped_text(pdf, contact_line, left, y, content_width, bottom, top)
     pdf.setFillColor(colors.HexColor("#1D4ED8"))
     links_line = f"LinkedIn: {cv.get('linkedin', '')} | GitHub: {cv.get('github', '')}"
     y = draw_pdf_wrapped_text(pdf, links_line, left, y, content_width, bottom, top)
     pdf.setFillColor(colors.black)
-    y -= 8
+    y -= 6
 
+    y = ensure_pdf_space(pdf, y, 40, bottom, top)
     y = draw_pdf_title(pdf, "Profile", left, y)
     y = draw_pdf_wrapped_text(pdf, cv.get("profile_summary", ""), left, y, content_width, bottom, top)
     y -= 6
 
+    y = ensure_pdf_space(pdf, y, 40, bottom, top)
     y = draw_pdf_title(pdf, "Core Competencies", left, y)
     for item in cv.get("core_competencies", []):
         y = draw_pdf_wrapped_text(pdf, f"- {item}", left, y, content_width, bottom, top)
     y -= 6
 
+    y = ensure_pdf_space(pdf, y, 40, bottom, top)
     y = draw_pdf_title(pdf, "Professional Experience", left, y)
     for exp in cv.get("experience", []):
+        y = ensure_pdf_space(pdf, y, 28, bottom, top)
         y = draw_pdf_wrapped_text(
             pdf,
             f"{exp.get('role', '')} - {exp.get('organization', '')} | {exp.get('period', '')}",
@@ -851,18 +871,22 @@ def build_pdf_one_column(cv: dict) -> bytes:
             y = draw_pdf_wrapped_text(pdf, f"  - {bullet}", left, y, content_width, bottom, top)
         y -= 3
 
+    y = ensure_pdf_space(pdf, y, 36, bottom, top)
     y = draw_pdf_title(pdf, "Education", left, y)
     for item in cv.get("education", []):
         y = draw_pdf_wrapped_text(pdf, f"- {item}", left, y, content_width, bottom, top)
 
+    y = ensure_pdf_space(pdf, y, 36, bottom, top)
     y = draw_pdf_title(pdf, "Certifications", left, y)
     for item in cv.get("certifications", []):
         y = draw_pdf_wrapped_text(pdf, f"- {item}", left, y, content_width, bottom, top)
 
+    y = ensure_pdf_space(pdf, y, 36, bottom, top)
     y = draw_pdf_title(pdf, "Languages", left, y)
     for item in cv.get("languages", []):
         y = draw_pdf_wrapped_text(pdf, f"- {item}", left, y, content_width, bottom, top)
 
+    y = ensure_pdf_space(pdf, y, 42, bottom, top)
     y = draw_pdf_title(pdf, "Referees", left, y)
     for idx, ref in enumerate(cv.get("referees", []), start=1):
         ref_line = (
