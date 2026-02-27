@@ -1159,7 +1159,14 @@ def build_html(cv: dict, template: str) -> str:
     body { font-family: 'Inter', 'Segoe UI', sans-serif; margin: 0; background: #f0f2f5; padding: 32px; color: #0f172a; }
     .cv { max-width: 1120px; margin: auto; background: #ffffff; display: grid; grid-template-columns: 0.95fr 1.7fr; border-radius: 18px; box-shadow: 0 18px 40px rgba(15,23,42,0.18); overflow: hidden; }
     .sidebar { background: linear-gradient(180deg, #0f172a, #1f2937); color: #f8fafc; padding: 36px 32px; display: flex; flex-direction: column; gap: 14px; min-height: 420px; }
-    .sidebar h1 { margin: 0; font-size: 34px; letter-spacing: 0.5px; }
+    .sidebar h1 {
+        margin: 0;
+        font-size: clamp(28px, 3vw, 34px);
+        line-height: 1.15;
+        letter-spacing: 0.5px;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
     .sidebar .headline { color: #cbd5ff; font-weight: 500; margin-top: 6px; margin-bottom: 12px; }
     .contact-block { font-size: 13px; line-height: 1.6; }
     .contact-block strong { display: block; color: #94a3b8; font-size: 10px; letter-spacing: 0.4px; text-transform: uppercase; margin-top: 12px; }
