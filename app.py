@@ -355,7 +355,12 @@ PDF_TEMPLATE_THEMES = {
             "text_color": colors.HexColor("#0f172a"),
             "hero_text": colors.HexColor("#f8fafc"),
             "panel_border": colors.HexColor("#dbe5f0"),
-            "layout": "modern_header",
+            "layout": "sidebar_skillset",
+            "sidebar_text_color": colors.HexColor("#e2e8f0"),
+            "sidebar_section_title_color": colors.HexColor("#bfdbfe"),
+            "sidebar_section_line_color": colors.HexColor("#334155"),
+            "sidebar_section_icon_badge_color": colors.HexColor("#60a5fa"),
+            "sidebar_section_icon_text_color": colors.HexColor("#0f172a"),
         },
     ),
     "Two Column - Accent Panel": _merge_pdf_theme(
@@ -1934,6 +1939,11 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
     section_line_color = theme.get("section_line_color", colors.HexColor("#BFD7ED"))
     section_icon_badge_color = theme.get("section_icon_badge_color", section_line_color)
     section_icon_text_color = theme.get("section_icon_text_color", colors.white)
+    sidebar_text_color = theme.get("sidebar_text_color", text_color)
+    sidebar_section_title_color = theme.get("sidebar_section_title_color", section_title_color)
+    sidebar_section_line_color = theme.get("sidebar_section_line_color", section_line_color)
+    sidebar_section_icon_badge_color = theme.get("sidebar_section_icon_badge_color", section_icon_badge_color)
+    sidebar_section_icon_text_color = theme.get("sidebar_section_icon_text_color", section_icon_text_color)
 
     buffer = BytesIO()
     pdf = canvas.Canvas(buffer, pagesize=A4)
@@ -1947,16 +1957,33 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
     top = height - 22
     bottom = 28
     total_width = width - (2 * margin)
-    left_width = total_width * 0.62
-    right_width = total_width - left_width - gap
-    left_x = margin
-    right_x = left_x + left_width + gap
+    if layout_style == "sidebar_skillset":
+        sidebar_width = total_width * 0.34
+        main_width = total_width - sidebar_width - gap
+        left_width = main_width
+        right_width = sidebar_width
+        right_x = margin
+        left_x = right_x + right_width + gap
+    else:
+        left_width = total_width * 0.62
+        right_width = total_width - left_width - gap
+        left_x = margin
+        right_x = left_x + left_width + gap
 
     def draw_columns(panel_top: float) -> None:
         column_height = panel_top - bottom + 12
-        pdf.setFillColor(panel_primary)
         pdf.setStrokeColor(panel_border)
         pdf.setLineWidth(1)
+        if layout_style == "sidebar_skillset":
+            pdf.setFillColor(panel_primary)
+            pdf.roundRect(left_x - 4, bottom - 4, left_width + 8, column_height, 10, fill=1, stroke=1)
+            pdf.setFillColor(hero_background)
+            pdf.roundRect(right_x - 4, bottom - 4, right_width + 8, column_height, 10, fill=1, stroke=0)
+            pdf.setStrokeColor(hero_accent)
+            pdf.roundRect(right_x - 4, bottom - 4, right_width + 8, column_height, 10, fill=0, stroke=1)
+            return
+
+        pdf.setFillColor(panel_primary)
         pdf.roundRect(left_x - 4, bottom - 4, left_width + 8, column_height, 8, fill=1, stroke=1)
         pdf.setFillColor(panel_secondary)
         pdf.roundRect(right_x - 4, bottom - 4, right_width + 8, column_height, 8, fill=1, stroke=1)
@@ -1966,6 +1993,32 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
         pdf.rect(0, 0, width, height, fill=1, stroke=0)
 
         if first_page:
+            if layout_style == "sidebar_skillset":
+                draw_columns(top)
+                pdf.setFillColor(hero_accent)
+                pdf.roundRect(right_x + 8, top - 64, right_width - 16, 40, 8, fill=1, stroke=0)
+
+                pdf.setFillColor(hero_text_color)
+                pdf.setFont("Helvetica-Bold", 17)
+                pdf.drawString(right_x + 12, top - 20, pdf_safe_text(cv.get("full_name", "")))
+                pdf.setFont("Helvetica", 11)
+                pdf.drawString(right_x + 12, top - 40, pdf_safe_text(cv.get("headline", "")))
+
+                pdf.setFont("Helvetica-Bold", 8)
+                pdf.drawString(right_x + 12, top - 74, "LOCATION")
+                pdf.setFont("Helvetica", 10)
+                pdf.drawString(right_x + 12, top - 88, pdf_safe_text(cv.get("location", "")))
+                pdf.setFont("Helvetica-Bold", 8)
+                pdf.drawString(right_x + 12, top - 114, "PHONE")
+                pdf.setFont("Helvetica", 10)
+                pdf.drawString(right_x + 12, top - 128, pdf_safe_text(cv.get("phone", "")))
+                pdf.setFont("Helvetica-Bold", 8)
+                pdf.drawString(right_x + 12, top - 154, "EMAIL")
+                pdf.setFont("Helvetica", 10)
+                pdf.drawString(right_x + 12, top - 168, pdf_safe_text(cv.get("email", "")))
+
+                return top - 22, top - 206
+
             if layout_style == "professional_header":
                 header_height = 112
                 header_bottom = top - header_height
@@ -2031,6 +2084,15 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
 
         ribbon_height = 24
         ribbon_bottom = top - ribbon_height
+        if layout_style == "sidebar_skillset":
+            draw_columns(top)
+            pdf.setFillColor(hero_text_color)
+            pdf.setFont("Helvetica-Bold", 10)
+            pdf.drawString(right_x + 12, top - 18, pdf_safe_text(cv.get("full_name", "")))
+            pdf.setFont("Helvetica", 8)
+            pdf.drawString(right_x + 12, top - 32, pdf_safe_text(cv.get("headline", "")))
+            return top - 18, top - 52
+
         pdf.setFillColor(hero_background)
         if layout_style == "professional_header":
             pdf.roundRect(left_x - 2, ribbon_bottom, total_width + 4, ribbon_height, 5, fill=1, stroke=0)
@@ -2115,15 +2177,18 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
     ]
     for line in contact_lines:
         add_text_ops(right_ops, line, right_width, font_name="Helvetica", font_size=9, leading=12)
+
+    if layout_style == "sidebar_skillset":
+        linkedin = cv.get("linkedin", "")
+        github = cv.get("github", "")
+        if str(linkedin).strip():
+            add_text_ops(right_ops, f"LinkedIn: {linkedin}", right_width, font_name="Helvetica", font_size=9, leading=12)
+        if str(github).strip():
+            add_text_ops(right_ops, f"GitHub: {github}", right_width, font_name="Helvetica", font_size=9, leading=12)
     add_gap_op(right_ops, 6)
 
     add_title_op(right_ops, "Core Competencies")
     for item in cv.get("core_competencies", []):
-        add_text_ops(right_ops, f"- {item}", right_width, font_name="Helvetica", font_size=9, leading=12)
-    add_gap_op(right_ops, 4)
-
-    add_title_op(right_ops, "Certifications")
-    for item in cv.get("certifications", []):
         add_text_ops(right_ops, f"- {item}", right_width, font_name="Helvetica", font_size=9, leading=12)
     add_gap_op(right_ops, 4)
 
@@ -2132,41 +2197,74 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
         add_text_ops(right_ops, f"- {item}", right_width, font_name="Helvetica", font_size=9, leading=12)
     add_gap_op(right_ops, 4)
 
-    add_title_op(right_ops, "Referees")
-    for ref in cv.get("referees", []):
-        name = ref.get("name", "")
-        position = ref.get("position") or ref.get("title", "")
-        organization = ref.get("organization", "")
-        email = ref.get("email", "")
-        phone = ref.get("phone", "")
-        parts = [part for part in [name, position, organization] if part]
-        summary = " | ".join(parts)
-        contacts = []
-        if email:
-            contacts.append(f"Email: {email}")
-        if phone:
-            contacts.append(f"Phone: {phone}")
-        contact_line = " | ".join(contacts)
-        text = f"{summary}" if summary else ""
-        if contact_line:
-            text = f"{text} | {contact_line}" if text else contact_line
-        if text:
-            add_text_ops(right_ops, f"- {text}", right_width, font_name="Helvetica", font_size=9, leading=12)
+    if layout_style == "sidebar_skillset":
+        add_title_op(left_ops, "Certifications")
+        for item in cv.get("certifications", []):
+            add_text_ops(left_ops, f"- {item}", left_width, font_name="Helvetica", font_size=9, leading=12)
+        add_gap_op(left_ops, 4)
 
-    def render_op(op: dict, x: float, y: float) -> float:
+        add_title_op(left_ops, "Referees")
+        for ref in cv.get("referees", []):
+            name = ref.get("name", "")
+            position = ref.get("position") or ref.get("title", "")
+            organization = ref.get("organization", "")
+            email = ref.get("email", "")
+            phone = ref.get("phone", "")
+            parts = [part for part in [name, position, organization] if part]
+            summary = " | ".join(parts)
+            contacts = []
+            if email:
+                contacts.append(f"Email: {email}")
+            if phone:
+                contacts.append(f"Phone: {phone}")
+            contact_line = " | ".join(contacts)
+            text = f"{summary}" if summary else ""
+            if contact_line:
+                text = f"{text} | {contact_line}" if text else contact_line
+            if text:
+                add_text_ops(left_ops, f"- {text}", left_width, font_name="Helvetica", font_size=9, leading=12)
+    else:
+        add_title_op(right_ops, "Certifications")
+        for item in cv.get("certifications", []):
+            add_text_ops(right_ops, f"- {item}", right_width, font_name="Helvetica", font_size=9, leading=12)
+        add_gap_op(right_ops, 4)
+
+        add_title_op(right_ops, "Referees")
+        for ref in cv.get("referees", []):
+            name = ref.get("name", "")
+            position = ref.get("position") or ref.get("title", "")
+            organization = ref.get("organization", "")
+            email = ref.get("email", "")
+            phone = ref.get("phone", "")
+            parts = [part for part in [name, position, organization] if part]
+            summary = " | ".join(parts)
+            contacts = []
+            if email:
+                contacts.append(f"Email: {email}")
+            if phone:
+                contacts.append(f"Phone: {phone}")
+            contact_line = " | ".join(contacts)
+            text = f"{summary}" if summary else ""
+            if contact_line:
+                text = f"{text} | {contact_line}" if text else contact_line
+            if text:
+                add_text_ops(right_ops, f"- {text}", right_width, font_name="Helvetica", font_size=9, leading=12)
+
+    def render_op(op: dict, x: float, y: float, column: str) -> float:
+        is_sidebar_column = layout_style == "sidebar_skillset" and column == "sidebar"
         if op["kind"] == "title":
             return draw_pdf_section_title(
                 pdf,
                 op["title"],
                 x,
                 y,
-                title_color=section_title_color,
-                line_color=section_line_color,
-                icon_badge_color=section_icon_badge_color,
-                icon_text_color=section_icon_text_color,
+                title_color=sidebar_section_title_color if is_sidebar_column else section_title_color,
+                line_color=sidebar_section_line_color if is_sidebar_column else section_line_color,
+                icon_badge_color=sidebar_section_icon_badge_color if is_sidebar_column else section_icon_badge_color,
+                icon_text_color=sidebar_section_icon_text_color if is_sidebar_column else section_icon_text_color,
             )
         if op["kind"] == "line":
-            pdf.setFillColor(text_color)
+            pdf.setFillColor(sidebar_text_color if is_sidebar_column else text_color)
             pdf.setFont(op["font_name"], op["font_size"])
             pdf.drawString(x, y, op["text"])
             return y - op["leading"]
@@ -2181,14 +2279,14 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
             op = left_ops[left_index]
             if y_left - op["height"] < bottom:
                 break
-            y_left = render_op(op, left_x, y_left)
+            y_left = render_op(op, left_x, y_left, "main")
             left_index += 1
 
         while right_index < len(right_ops):
             op = right_ops[right_index]
             if y_right - op["height"] < bottom:
                 break
-            y_right = render_op(op, right_x, y_right)
+            y_right = render_op(op, right_x, y_right, "sidebar")
             right_index += 1
 
         if left_index >= len(left_ops) and right_index >= len(right_ops):
