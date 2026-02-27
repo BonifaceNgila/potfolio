@@ -390,7 +390,14 @@ PDF_TEMPLATE_THEMES = {
             "text_color": colors.HexColor("#0f172a"),
             "hero_text": colors.HexColor("#f8fafc"),
             "panel_border": colors.HexColor("#d6e3f2"),
-            "layout": "modern_header",
+            "layout": "slate_profile",
+            "sidebar_background": colors.HexColor("#f1f3f5"),
+            "sidebar_border": colors.HexColor("#d6d8dc"),
+            "sidebar_text_color": colors.HexColor("#1f2937"),
+            "sidebar_section_title_color": colors.HexColor("#0f172a"),
+            "sidebar_section_line_color": colors.HexColor("#d6d8dc"),
+            "sidebar_section_icon_badge_color": colors.HexColor("#2563eb"),
+            "sidebar_section_icon_text_color": colors.white,
         },
     ),
     "One Column - Classic": _merge_pdf_theme(
@@ -836,7 +843,7 @@ def normalize_education_record(item) -> dict:
 
 def html_education(education: list[dict]) -> str:
     entries = []
-    for item in education:
+    for idx, item in enumerate(education, start=1):
         record = normalize_education_record(item)
         course = html.escape(record.get("course", ""))
         institution = html.escape(record.get("institution", ""))
@@ -847,11 +854,11 @@ def html_education(education: list[dict]) -> str:
             f"""
             <div class=\"education-entry\">
                 <div class=\"education-top\">
-                    <span class=\"education-course\">📚 {course}</span>
+                    <span class=\"education-course\">• {idx}. {course}</span>
                     <span class=\"education-timeline\">{timeline}</span>
                 </div>
                 <div class=\"education-institution\">
-                    🎓 {institution}
+                    • {idx}. {institution}
                 </div>
             </div>
             """
@@ -1240,6 +1247,9 @@ def build_html(cv: dict, template: str) -> str:
     .referee-org { font-size: 13px; color: #475569; }
     .referee-meta { margin-top: 4px; display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: #1f2937; }
     .referee-field { display: inline-flex; align-items: center; gap: 4px; padding-right: 8px; }
+    .job p, .job li, .section-block p, .section-block li, .main-panel p, .main-panel li,
+    .side-panel p, .side-panel li, .content p, .content li, .main-area p, .main-area li,
+    .summary { text-align: justify; text-justify: inter-word; }
     """
 
     one_column_css += shared_section_styles
@@ -1848,7 +1858,7 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
         icon_text_color=section_icon_text_color,
     )
     pdf.setFillColor(text_color)
-    for item in cv.get("education", []):
+    for idx, item in enumerate(cv.get("education", []), start=1):
         record = normalize_education_record(item)
         course = record.get("course", "")
         institution = record.get("institution", "")
@@ -1858,7 +1868,7 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
             line_parts.append(f"({timeline})")
         entry_line = " - ".join(line_parts) if line_parts else ""
         if entry_line:
-            entry_line = f"• {entry_line}"
+            entry_line = f"• {idx}. {entry_line}"
         y = draw_pdf_wrapped_text(
             pdf, entry_line, left, y, content_width, bottom, top, on_new_page=on_new_page_callback
         )
@@ -1958,6 +1968,8 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
     sidebar_section_line_color = theme.get("sidebar_section_line_color", section_line_color)
     sidebar_section_icon_badge_color = theme.get("sidebar_section_icon_badge_color", section_icon_badge_color)
     sidebar_section_icon_text_color = theme.get("sidebar_section_icon_text_color", section_icon_text_color)
+    sidebar_background = theme.get("sidebar_background", panel_secondary)
+    sidebar_border = theme.get("sidebar_border", panel_border)
 
     buffer = BytesIO()
     pdf = canvas.Canvas(buffer, pagesize=A4)
@@ -1978,6 +1990,13 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
         right_width = sidebar_width
         right_x = margin
         left_x = right_x + right_width + gap
+    elif layout_style == "slate_profile":
+        sidebar_width = total_width * 0.36
+        main_width = total_width - sidebar_width - gap
+        right_width = sidebar_width
+        right_x = margin
+        left_width = main_width
+        left_x = right_x + right_width + gap
     else:
         left_width = total_width * 0.62
         right_width = total_width - left_width - gap
@@ -1996,6 +2015,16 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
             pdf.setStrokeColor(hero_accent)
             pdf.roundRect(right_x - 4, bottom - 4, right_width + 8, column_height, 10, fill=0, stroke=1)
             return
+        if layout_style == "slate_profile":
+            pdf.setFillColor(panel_primary)
+            pdf.roundRect(left_x - 4, bottom - 4, left_width + 8, column_height, 10, fill=1, stroke=1)
+            pdf.setStrokeColor(panel_border)
+            pdf.roundRect(left_x - 4, bottom - 4, left_width + 8, column_height, 10, fill=0, stroke=1)
+            pdf.setFillColor(sidebar_background)
+            pdf.roundRect(right_x - 4, bottom - 4, right_width + 8, column_height, 10, fill=1, stroke=0)
+            pdf.setStrokeColor(sidebar_border)
+            pdf.roundRect(right_x - 4, bottom - 4, right_width + 8, column_height, 10, fill=0, stroke=1)
+            return
 
         pdf.setFillColor(panel_primary)
         pdf.roundRect(left_x - 4, bottom - 4, left_width + 8, column_height, 8, fill=1, stroke=1)
@@ -2007,6 +2036,23 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
         pdf.rect(0, 0, width, height, fill=1, stroke=0)
 
         if first_page:
+            if layout_style == "slate_profile":
+                name_banner_height = 78
+                banner_bottom = top - name_banner_height
+                pdf.setFillColor(panel_primary)
+                pdf.roundRect(margin - 6, banner_bottom - 10, total_width + 12, name_banner_height + 18, 8, fill=1, stroke=0)
+                pdf.setStrokeColor(panel_border)
+                pdf.setLineWidth(1)
+                pdf.roundRect(margin - 6, banner_bottom - 10, total_width + 12, name_banner_height + 18, 8, fill=0, stroke=1)
+                pdf.setFillColor(text_color)
+                pdf.setFont("Helvetica-Bold", 26)
+                pdf.drawCentredString(width / 2, banner_bottom + name_banner_height - 22, pdf_safe_text(cv.get("full_name", "")))
+                pdf.setFont("Helvetica", 12)
+                pdf.drawCentredString(width / 2, banner_bottom + name_banner_height - 44, pdf_safe_text(cv.get("headline", "")))
+                draw_columns(banner_bottom - 14)
+                start_y = banner_bottom - 30
+                return start_y, start_y
+
             if layout_style == "sidebar_skillset":
                 draw_columns(top)
                 pdf.setFillColor(hero_accent)
@@ -2107,6 +2153,12 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
             pdf.drawString(right_x + 12, top - 32, pdf_safe_text(cv.get("headline", "")))
             return top - 18, top - 52
 
+        if layout_style == "slate_profile":
+            draw_columns(top - 8)
+            pdf.setFillColor(text_color)
+            start_y = top - 26
+            return start_y, start_y
+
         pdf.setFillColor(hero_background)
         if layout_style == "professional_header":
             pdf.roundRect(left_x - 2, ribbon_bottom, total_width + 4, ribbon_height, 5, fill=1, stroke=0)
@@ -2167,51 +2219,97 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
             add_text_ops(left_ops, f"- {bullet}", left_width, font_name="Helvetica", font_size=9, leading=12)
         add_gap_op(left_ops, 3)
 
-    add_title_op(left_ops, "Education")
+    education_records: list[dict] = []
     for item in cv.get("education", []):
         record = normalize_education_record(item)
-        course = record.get("course", "")
-        institution = record.get("institution", "")
-        timeline = record.get("timeline", "")
-        parts = [part for part in [course, institution] if part]
-        if timeline:
-            parts.append(f"({timeline})")
-        entry_line = " - ".join(parts) if parts else ""
-        if entry_line:
-            add_text_ops(left_ops, f"• {entry_line}", left_width, font_name="Helvetica", font_size=10, leading=13)
+        if any(str(record.get(field, "")).strip() for field in ("course", "institution", "timeline")):
+            education_records.append(record)
+
+    def append_education_ops(target_ops: list[dict], column_width: float) -> None:
+        if not education_records:
+            return
+        add_title_op(target_ops, "Education")
+        for idx, record in enumerate(education_records, start=1):
+            course = record.get("course", "")
+            institution = record.get("institution", "")
+            timeline = record.get("timeline", "")
+            parts = [part for part in [course, institution] if part]
+            if timeline:
+                parts.append(f"({timeline})")
+            entry_line = " - ".join(parts) if parts else ""
+            if entry_line:
+                add_text_ops(
+                    target_ops,
+                    f"• {idx}. {entry_line}",
+                    column_width,
+                    font_name="Helvetica",
+                    font_size=10,
+                    leading=13,
+                )
+
+    if layout_style != "slate_profile":
+        append_education_ops(left_ops, left_width)
 
     right_ops: list[dict] = []
-    add_title_op(right_ops, "Contact")
-    contact_lines = [
-        f"Location: {cv.get('location', '')}",
-        f"Phone: {cv.get('phone', '')}",
-        f"Email: {cv.get('email', '')}",
-        f"LinkedIn: {cv.get('linkedin', '')}",
-        f"GitHub: {cv.get('github', '')}",
-    ]
-    for line in contact_lines:
-        add_text_ops(right_ops, line, right_width, font_name="Helvetica", font_size=9, leading=12)
+    contact_title = "Personal Details" if layout_style == "slate_profile" else "Contact"
+    add_title_op(right_ops, contact_title)
 
-    if layout_style == "sidebar_skillset":
-        linkedin = cv.get("linkedin", "")
-        github = cv.get("github", "")
-        if str(linkedin).strip():
-            add_text_ops(right_ops, f"LinkedIn: {linkedin}", right_width, font_name="Helvetica", font_size=9, leading=12)
-        if str(github).strip():
-            add_text_ops(right_ops, f"GitHub: {github}", right_width, font_name="Helvetica", font_size=9, leading=12)
+    def add_contact_line(label: str, value: str) -> None:
+        if str(value).strip():
+            add_text_ops(
+                right_ops,
+                f"{label}: {value}",
+                right_width,
+                font_name="Helvetica",
+                font_size=9,
+                leading=12,
+            )
+
+    if layout_style == "slate_profile":
+        add_contact_line("Name", cv.get("full_name", ""))
+        add_contact_line("Address", cv.get("location", ""))
+    else:
+        add_contact_line("Location", cv.get("location", ""))
+    add_contact_line("Phone", cv.get("phone", ""))
+    add_contact_line("Email", cv.get("email", ""))
+    add_contact_line("LinkedIn", cv.get("linkedin", ""))
+    add_contact_line("GitHub", cv.get("github", ""))
     add_gap_op(right_ops, 6)
 
-    add_title_op(right_ops, "Core Competencies")
-    for item in cv.get("core_competencies", []):
-        add_text_ops(right_ops, f"- {item}", right_width, font_name="Helvetica", font_size=9, leading=12)
-    add_gap_op(right_ops, 4)
+    if layout_style == "slate_profile":
+        append_education_ops(right_ops, right_width)
+        if education_records:
+            add_gap_op(right_ops, 4)
+
+    competencies = [item for item in cv.get("core_competencies", []) if str(item).strip()]
+    if layout_style == "slate_profile":
+        skills = competencies[:6] if competencies else []
+        technical = competencies[6:] if len(competencies) > 6 else []
+        if not skills and competencies:
+            skills = competencies
+            technical = []
+        if skills:
+            add_title_op(right_ops, "Skills")
+            for item in skills:
+                add_text_ops(right_ops, f"- {item}", right_width, font_name="Helvetica", font_size=9, leading=12)
+            add_gap_op(right_ops, 4 if technical else 6)
+        if technical:
+            add_title_op(right_ops, "Technical Proficiencies")
+            for item in technical:
+                add_text_ops(right_ops, f"- {item}", right_width, font_name="Helvetica", font_size=9, leading=12)
+            add_gap_op(right_ops, 4)
+    else:
+        add_title_op(right_ops, "Core Competencies")
+        for item in competencies:
+            add_text_ops(right_ops, f"- {item}", right_width, font_name="Helvetica", font_size=9, leading=12)
+        add_gap_op(right_ops, 4)
 
     add_title_op(right_ops, "Languages")
     for item in cv.get("languages", []):
         add_text_ops(right_ops, f"- {item}", right_width, font_name="Helvetica", font_size=9, leading=12)
     add_gap_op(right_ops, 4)
 
-    if layout_style == "sidebar_skillset":
+    if layout_style in ("sidebar_skillset", "slate_profile"):
         add_title_op(left_ops, "Certifications")
         for item in cv.get("certifications", []):
             add_text_ops(left_ops, f"- {item}", left_width, font_name="Helvetica", font_size=9, leading=12)
@@ -2265,7 +2363,7 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
                 add_text_ops(right_ops, f"- {text}", right_width, font_name="Helvetica", font_size=9, leading=12)
 
     def render_op(op: dict, x: float, y: float, column: str) -> float:
-        is_sidebar_column = layout_style == "sidebar_skillset" and column == "sidebar"
+        is_sidebar_column = layout_style in {"sidebar_skillset", "slate_profile"} and column == "sidebar"
         if op["kind"] == "title":
             return draw_pdf_section_title(
                 pdf,
