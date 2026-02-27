@@ -448,8 +448,22 @@ def validate_template_mappings() -> list[str]:
     return issues
 
 
+def normalize_template_name(template: str) -> str:
+    value = str(template or "").strip()
+    if not value:
+        return value
+    if value in DISPLAY_TEMPLATE_OPTIONS:
+        return DISPLAY_TEMPLATE_OPTIONS[value]
+    if "•" in value:
+        value = value.replace(" • ", " - ").replace("•", "-")
+    value = re.sub(r"\s*-\s*", " - ", value)
+    value = re.sub(r"\s+", " ", value).strip()
+    return value
+
+
 def get_pdf_theme(template: str) -> dict:
-    mapped_template = DISPLAY_TO_PDF_TEMPLATE_MAP.get(template, template)
+    normalized_template = normalize_template_name(template)
+    mapped_template = DISPLAY_TO_PDF_TEMPLATE_MAP.get(normalized_template, normalized_template)
     if mapped_template in PDF_TEMPLATE_THEMES:
         return PDF_TEMPLATE_THEMES[mapped_template]
     if "Two Column" in mapped_template:
@@ -2303,8 +2317,9 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
 def build_pdf(cv: dict, template: str) -> bytes:
     if not REPORTLAB_AVAILABLE:
         return b""
-    theme = get_pdf_theme(template)
-    if "Two Column" in template:
+    normalized_template = normalize_template_name(template)
+    theme = get_pdf_theme(normalized_template)
+    if "Two Column" in normalized_template:
         return build_pdf_two_column(cv, theme)
     return build_pdf_one_column(cv, theme)
 
