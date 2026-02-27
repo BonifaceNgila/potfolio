@@ -372,8 +372,6 @@ PDF_TEMPLATE_THEMES = {
             "sidebar_text_color": colors.HexColor("#e2e8f0"),
             "sidebar_section_title_color": colors.HexColor("#bfdbfe"),
             "sidebar_section_line_color": colors.HexColor("#334155"),
-            "sidebar_section_icon_badge_color": colors.HexColor("#60a5fa"),
-            "sidebar_section_icon_text_color": colors.HexColor("#0f172a"),
         },
     ),
     "Two Column - Accent Panel": _merge_pdf_theme(
@@ -409,8 +407,6 @@ PDF_TEMPLATE_THEMES = {
             "sidebar_text_color": colors.HexColor("#1f2937"),
             "sidebar_section_title_color": colors.HexColor("#0f172a"),
             "sidebar_section_line_color": colors.HexColor("#d6d8dc"),
-            "sidebar_section_icon_badge_color": colors.HexColor("#2563eb"),
-            "sidebar_section_icon_text_color": colors.white,
         },
     ),
     "One Column - Classic": _merge_pdf_theme(
@@ -836,9 +832,9 @@ def html_experience(experience: list[dict]) -> str:
             <div class=\"job\">
                 <div class=\"experience-header\">
                     <h4>{role}</h4>
-                    <span class=\"experience-period\">🕒 {period}</span>
+                    <span class=\"experience-period\">{period}</span>
                 </div>
-                <div class=\"experience-org\">🏢 {org}</div>
+                <div class=\"experience-org\">{org}</div>
                 {bullets}
             </div>
             """
@@ -889,18 +885,18 @@ def html_referees(referees: list[dict]) -> str:
         phone = html.escape(ref.get("phone", ""))
         meta_parts = []
         if position:
-            meta_parts.append(f"<span class='referee-field'>🎯 {position}</span>")
+            meta_parts.append(f"<span class='referee-field'>{position}</span>")
         if email:
-            meta_parts.append(f"<span class='referee-field'>✉️ {email}</span>")
+            meta_parts.append(f"<span class='referee-field'>{email}</span>")
         if phone:
-            meta_parts.append(f"<span class='referee-field'>📞 {phone}</span>")
+            meta_parts.append(f"<span class='referee-field'>{phone}</span>")
         meta_html = "".join(meta_parts)
         entries.append(
             f"""
             <li class='referee'>
                 <div class='referee-head'>
-                    <span class='referee-name'>🧑‍💼 {name}</span>
-                    <span class='referee-org'>🏢 {organization}</span>
+                    <span class='referee-name'>{name}</span>
+                    <span class='referee-org'>{organization}</span>
                 </div>
                 <div class='referee-meta'>
                     {meta_html}
@@ -913,12 +909,11 @@ def html_referees(referees: list[dict]) -> str:
     return f"<ul class='referees-list'>{''.join(entries)}</ul>"
 
 
-def section_header(title: str, icon: str) -> str:
+def section_header(title: str) -> str:
     if not title:
         return ""
     return (
         "<div class='section-heading'>"
-        f"<span class='section-icon'>{html.escape(icon)}</span>"
         f"<h2>{html.escape(title)}</h2>"
         "</div>"
     )
@@ -943,30 +938,30 @@ def build_html(cv: dict, template: str) -> str:
     links = f"<p>{' | '.join(link_items)}</p>" if link_items else ""
 
     profile_section = (
-        section_header("Profile", "🧭") + f"<p>{profile}</p>"
+        section_header("Profile") + f"<p>{profile}</p>"
     )
     experience_section = (
-        section_header("Professional Experience", "💼")
+        section_header("Professional Experience")
         + html_experience(cv.get("experience", []))
     )
     education_section = (
-        section_header("Education", "🎓")
+        section_header("Education")
         + html_education(cv.get("education", []))
     )
     competencies_section = (
-        section_header("Core Competencies", "🧠")
+        section_header("Core Competencies")
         + html_list(cv.get("core_competencies", []))
     )
     certifications_section = (
-        section_header("Certifications", "📜")
+        section_header("Certifications")
         + html_list(cv.get("certifications", []))
     )
     languages_section = (
-        section_header("Languages", "🗣️")
+        section_header("Languages")
         + html_list(cv.get("languages", []))
     )
     referees_section = (
-        section_header("Referees", "🧑‍💼")
+        section_header("Referees")
         + html_referees(cv.get("referees", []))
     )
 
@@ -1441,7 +1436,7 @@ def build_html(cv: dict, template: str) -> str:
         education_section = (
             f"""
             <div class='sidebar-section'>
-                <h3>🎓 Education</h3>
+                <h3>Education</h3>
                 {education_html}
             </div>
             """ if education_html else ""
@@ -1449,7 +1444,7 @@ def build_html(cv: dict, template: str) -> str:
         skills_section = (
             f"""
             <div class='sidebar-section'>
-                <h3>🧠 Skills</h3>
+                <h3>Skills</h3>
                 {skills_html}
             </div>
             """ if skills_html else ""
@@ -1457,7 +1452,7 @@ def build_html(cv: dict, template: str) -> str:
         tech_section = (
             f"""
             <div class='sidebar-section'>
-                <h3>⚙️ Technical Proficiencies</h3>
+                <h3>Technical Proficiencies</h3>
                 {tech_html}
             </div>
             """ if tech_html else ""
@@ -1465,7 +1460,7 @@ def build_html(cv: dict, template: str) -> str:
         languages_section = (
             f"""
             <div class='sidebar-section'>
-                <h3>🗣️ Languages</h3>
+                <h3>Languages</h3>
                 {languages_html}
             </div>
             """ if languages_html else ""
@@ -1598,18 +1593,6 @@ def draw_pdf_title(pdf, title: str, x: float, y: float, font_size: int = 12) -> 
     return y - 16
 
 
-PDF_SECTION_ICON_FALLBACKS = {
-    "Profile": "P",
-    "Core Competencies": "C",
-    "Professional Experience": "E",
-    "Education": "Ed",
-    "Certifications": "Cf",
-    "Languages": "Lg",
-    "Referees": "Rf",
-    "Contact": "Ct",
-}
-
-
 def draw_pdf_section_title(
     pdf,
     title: str,
@@ -1618,22 +1601,8 @@ def draw_pdf_section_title(
     font_size: int = 12,
     title_color=None,
     line_color=None,
-    icon_badge_color=None,
-    icon_text_color=None,
 ) -> float:
-    icon = PDF_SECTION_ICON_FALLBACKS.get(title, "")
     title_x = x
-    if icon:
-        badge_color = icon_badge_color or line_color or colors.HexColor("#BFD7ED")
-        text_color = icon_text_color or colors.white
-        badge_x = x + 6
-        badge_y = y - 2
-        pdf.setFillColor(badge_color)
-        pdf.circle(badge_x, badge_y, 6, fill=1, stroke=0)
-        pdf.setFillColor(text_color)
-        pdf.setFont("Helvetica-Bold", 5)
-        pdf.drawCentredString(badge_x, badge_y - 2, pdf_safe_text(icon))
-        title_x = x + 20
 
     pdf.setFillColor(title_color or colors.HexColor("#1E3A5F"))
     pdf.setFont("Helvetica-Bold", font_size)
@@ -1684,8 +1653,6 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
         "section_line_color",
         colors.HexColor("#BFD7ED") if layout_style == "minimal_clean" else border_color,
     )
-    section_icon_badge_color = theme.get("section_icon_badge_color", section_line_color)
-    section_icon_text_color = theme.get("section_icon_text_color", colors.white)
 
     buffer = BytesIO()
     pdf = canvas.Canvas(buffer, pagesize=A4)
@@ -1792,8 +1759,6 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
         y,
         title_color=section_title_color,
         line_color=section_line_color,
-        icon_badge_color=section_icon_badge_color,
-        icon_text_color=section_icon_text_color,
     )
     pdf.setFillColor(text_color)
     y = draw_pdf_wrapped_text(
@@ -1816,8 +1781,6 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
         y,
         title_color=section_title_color,
         line_color=section_line_color,
-        icon_badge_color=section_icon_badge_color,
-        icon_text_color=section_icon_text_color,
     )
     pdf.setFillColor(text_color)
     for item in cv.get("core_competencies", []):
@@ -1834,8 +1797,6 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
         y,
         title_color=section_title_color,
         line_color=section_line_color,
-        icon_badge_color=section_icon_badge_color,
-        icon_text_color=section_icon_text_color,
     )
     pdf.setFillColor(text_color)
     for exp in cv.get("experience", []):
@@ -1867,8 +1828,6 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
         y,
         title_color=section_title_color,
         line_color=section_line_color,
-        icon_badge_color=section_icon_badge_color,
-        icon_text_color=section_icon_text_color,
     )
     pdf.setFillColor(text_color)
     for idx, item in enumerate(cv.get("education", []), start=1):
@@ -1894,8 +1853,6 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
         y,
         title_color=section_title_color,
         line_color=section_line_color,
-        icon_badge_color=section_icon_badge_color,
-        icon_text_color=section_icon_text_color,
     )
     pdf.setFillColor(text_color)
     for item in cv.get("certifications", []):
@@ -1911,8 +1868,6 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
         y,
         title_color=section_title_color,
         line_color=section_line_color,
-        icon_badge_color=section_icon_badge_color,
-        icon_text_color=section_icon_text_color,
     )
     pdf.setFillColor(text_color)
     for item in cv.get("languages", []):
@@ -1928,8 +1883,6 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
         y,
         title_color=section_title_color,
         line_color=section_line_color,
-        icon_badge_color=section_icon_badge_color,
-        icon_text_color=section_icon_text_color,
     )
     pdf.setFillColor(text_color)
     for idx, ref in enumerate(cv.get("referees", []), start=1):
@@ -1974,13 +1927,9 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
     layout_style = theme.get("layout", "modern_header")
     section_title_color = theme.get("section_title_color", colors.HexColor("#1E3A5F"))
     section_line_color = theme.get("section_line_color", colors.HexColor("#BFD7ED"))
-    section_icon_badge_color = theme.get("section_icon_badge_color", section_line_color)
-    section_icon_text_color = theme.get("section_icon_text_color", colors.white)
     sidebar_text_color = theme.get("sidebar_text_color", text_color)
     sidebar_section_title_color = theme.get("sidebar_section_title_color", section_title_color)
     sidebar_section_line_color = theme.get("sidebar_section_line_color", section_line_color)
-    sidebar_section_icon_badge_color = theme.get("sidebar_section_icon_badge_color", section_icon_badge_color)
-    sidebar_section_icon_text_color = theme.get("sidebar_section_icon_text_color", section_icon_text_color)
     sidebar_background = theme.get("sidebar_background", panel_secondary)
     sidebar_border = theme.get("sidebar_border", panel_border)
 
@@ -2385,8 +2334,6 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
                 y,
                 title_color=sidebar_section_title_color if is_sidebar_column else section_title_color,
                 line_color=sidebar_section_line_color if is_sidebar_column else section_line_color,
-                icon_badge_color=sidebar_section_icon_badge_color if is_sidebar_column else section_icon_badge_color,
-                icon_text_color=sidebar_section_icon_text_color if is_sidebar_column else section_icon_text_color,
             )
         if op["kind"] == "line":
             pdf.setFillColor(sidebar_text_color if is_sidebar_column else text_color)
