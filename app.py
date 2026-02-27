@@ -268,6 +268,19 @@ def init_db() -> None:
         )
         """
     )
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS cover_letter_versions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            profile_id INTEGER NOT NULL,
+            version_name TEXT NOT NULL,
+            letter_json TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (profile_id) REFERENCES profiles(id)
+        )
+        """
+    )
 
     ensure_column(cur, "profiles", "is_default", "INTEGER NOT NULL DEFAULT 0")
     ensure_column(cur, "profiles", "created_at", "TEXT NOT NULL DEFAULT ''")
@@ -276,11 +289,17 @@ def init_db() -> None:
     ensure_column(cur, "cv_versions", "cv_json", "TEXT NOT NULL DEFAULT '{}' ")
     ensure_column(cur, "cv_versions", "created_at", "TEXT NOT NULL DEFAULT ''")
     ensure_column(cur, "cv_versions", "updated_at", "TEXT NOT NULL DEFAULT ''")
+    ensure_column(cur, "cover_letter_versions", "version_name", "TEXT NOT NULL DEFAULT ''")
+    ensure_column(cur, "cover_letter_versions", "letter_json", "TEXT NOT NULL DEFAULT '{}' ")
+    ensure_column(cur, "cover_letter_versions", "created_at", "TEXT NOT NULL DEFAULT ''")
+    ensure_column(cur, "cover_letter_versions", "updated_at", "TEXT NOT NULL DEFAULT ''")
 
     now = datetime.utcnow().isoformat()
     cur.execute("UPDATE profiles SET created_at = ? WHERE created_at IS NULL OR created_at = ''", (now,))
     cur.execute("UPDATE cv_versions SET created_at = ? WHERE created_at IS NULL OR created_at = ''", (now,))
     cur.execute("UPDATE cv_versions SET updated_at = created_at WHERE updated_at IS NULL OR updated_at = ''")
+    cur.execute("UPDATE cover_letter_versions SET created_at = ? WHERE created_at IS NULL OR created_at = ''", (now,))
+    cur.execute("UPDATE cover_letter_versions SET updated_at = created_at WHERE updated_at IS NULL OR updated_at = ''")
 
     cur.execute("SELECT COUNT(*) FROM profiles")
     profile_count = cur.fetchone()[0]
@@ -613,6 +632,234 @@ def create_new_version(profile_id: int, version_name: str, cv_data: dict) -> Non
     )
     conn.commit()
     conn.close()
+
+
+def cv_sender_address(cv: dict) -> str:
+    lines = []
+    if cv.get("location"):
+        lines.append(str(cv.get("location", "")).strip())
+    if cv.get("phone"):
+        lines.append(f"Phone: {str(cv.get('phone', '')).strip()}")
+    if cv.get("email"):
+        lines.append(f"Email: {str(cv.get('email', '')).strip()}")
+    return "\n".join([line for line in lines if line])
+
+
+def default_cover_letter_data(cv: dict | None = None) -> dict:
+    cv = cv or {}
+    return {
+        "name": str(cv.get("full_name", "")).strip(),
+        "title": str(cv.get("headline", "")).strip(),
+        "sender_address": cv_sender_address(cv),
+        "recipient_address": "",
+        "subject": "",
+        "body": "",
+        "signatory": str(cv.get("full_name", "")).strip(),
+    }
+
+
+def fetch_cover_letter_versions(profile_id: int) -> list[dict]:
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        SELECT id, version_name, updated_at
+        FROM cover_letter_versions
+        WHERE profile_id = ?
+        ORDER BY datetime(updated_at) DESC, id DESC
+        """,
+        (profile_id,),
+    )
+    rows = cur.fetchall()
+    conn.close()
+    return [{"id": r[0], "version_name": r[1], "updated_at": r[2]} for r in rows]
+
+
+def fetch_cover_letter_version(version_id: int) -> dict | None:
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT id, version_name, letter_json FROM cover_letter_versions WHERE id = ?",
+        (version_id,),
+    )
+    row = cur.fetchone()
+    conn.close()
+    if not row:
+        return None
+    return {
+        "id": row[0],
+        "version_name": row[1],
+        "letter": json.loads(row[2]),
+    }
+
+
+def save_cover_letter_version(version_id: int, version_name: str, letter_data: dict) -> None:
+    now = datetime.utcnow().isoformat()
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        UPDATE cover_letter_versions
+        SET version_name = ?, letter_json = ?, updated_at = ?
+        WHERE id = ?
+        """,
+        (version_name.strip(), json.dumps(letter_data), now, version_id),
+    )
+    conn.commit()
+    conn.close()
+
+
+def create_cover_letter_version(profile_id: int, version_name: str, letter_data: dict) -> None:
+    now = datetime.utcnow().isoformat()
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        INSERT INTO cover_letter_versions(profile_id, version_name, letter_json, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?)
+        """,
+        (profile_id, version_name.strip(), json.dumps(letter_data), now, now),
+    )
+    conn.commit()
+    conn.close()
+
+
+def build_cover_letter_html(letter_data: dict) -> str:
+    sender_address = str(letter_data.get("sender_address", ""))
+    recipient_address = str(letter_data.get("recipient_address", ""))
+    subject = html.escape(str(letter_data.get("subject", "")).strip())
+    name = html.escape(str(letter_data.get("name", "")).strip())
+    title = html.escape(str(letter_data.get("title", "")).strip())
+    signatory = html.escape(str(letter_data.get("signatory", "")).strip())
+    body = str(letter_data.get("body", ""))
+
+    sender_address_html = "<br>".join(html.escape(line.strip()) for line in sender_address.splitlines() if line.strip())
+    recipient_address_html = "<br>".join(html.escape(line.strip()) for line in recipient_address.splitlines() if line.strip())
+    paragraphs = [segment.strip() for segment in re.split(r"\n\s*\n", body.strip()) if segment.strip()]
+    body_html = "".join(
+        f"<p class='cover-letter-body'>{html.escape(paragraph).replace(chr(10), '<br>')}</p>" for paragraph in paragraphs
+    )
+
+    return f"""
+    <div style="max-width: 860px; margin: 0 auto; background: #fff; border: 1px solid #d1d5db; padding: 28px; border-radius: 10px; font-family: Arial, sans-serif; color: #111827; line-height: 1.55;">
+        <div style="margin-bottom: 20px;">{sender_address_html}</div>
+        <div style="margin-bottom: 20px;">{recipient_address_html}</div>
+        <div style="margin-bottom: 16px;"><strong>Subject:</strong> {subject}</div>
+        {body_html}
+        <div style="margin-top: 24px;">Sincerely,</div>
+        <div style="margin-top: 56px; font-weight: 600;">{signatory or name}</div>
+        <div style="margin-top: 2px; color: #4b5563;">{title}</div>
+    </div>
+    <style>
+      .cover-letter-body {{
+        margin: 0 0 14px 0;
+        text-align: justify;
+        text-justify: inter-word;
+      }}
+    </style>
+    """
+
+
+def build_cover_letter_text(letter_data: dict) -> str:
+    sender_address = str(letter_data.get("sender_address", "")).strip()
+    recipient_address = str(letter_data.get("recipient_address", "")).strip()
+    subject = str(letter_data.get("subject", "")).strip()
+    body = str(letter_data.get("body", "")).strip()
+    signatory = str(letter_data.get("signatory", "")).strip() or str(letter_data.get("name", "")).strip()
+    title = str(letter_data.get("title", "")).strip()
+
+    lines = [sender_address, "", recipient_address, "", f"Subject: {subject}", "", body, "", "Sincerely,", "", signatory]
+    if title:
+        lines.append(title)
+    return "\n".join(lines)
+
+
+def build_cover_letter_docx(letter_data: dict) -> bytes:
+    if not DOCX_AVAILABLE:
+        return b""
+
+    doc = docx.Document()
+    for section in doc.sections:
+        section.top_margin = Inches(0.8)
+        section.bottom_margin = Inches(0.8)
+        section.left_margin = Inches(0.9)
+        section.right_margin = Inches(0.9)
+
+    style = doc.styles["Normal"]
+    style.font.name = "Calibri"
+    style.font.size = Pt(11)
+
+    sender_address = str(letter_data.get("sender_address", "")).strip()
+    recipient_address = str(letter_data.get("recipient_address", "")).strip()
+    subject = str(letter_data.get("subject", "")).strip()
+    body = str(letter_data.get("body", "")).strip()
+    signatory = str(letter_data.get("signatory", "")).strip() or str(letter_data.get("name", "")).strip()
+    title = str(letter_data.get("title", "")).strip()
+
+    if sender_address:
+        doc.add_paragraph(sender_address)
+        doc.add_paragraph("")
+    if recipient_address:
+        doc.add_paragraph(recipient_address)
+        doc.add_paragraph("")
+
+    subject_para = doc.add_paragraph()
+    subject_para.add_run("Subject: ").bold = True
+    subject_para.add_run(subject)
+    doc.add_paragraph("")
+
+    body_paragraphs = [segment.strip() for segment in re.split(r"\n\s*\n", body) if segment.strip()]
+    for paragraph in body_paragraphs:
+        p = doc.add_paragraph(paragraph)
+        p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    doc.add_paragraph("")
+    doc.add_paragraph("Sincerely,")
+    doc.add_paragraph("")
+    doc.add_paragraph(signatory)
+    if title:
+        doc.add_paragraph(title)
+
+    buffer = BytesIO()
+    doc.save(buffer)
+    return buffer.getvalue()
+
+
+def cover_letter_download_section(letter_data: dict, suggested_name: str) -> None:
+    safe_name = re.sub(r"[^A-Za-z0-9_-]+", "_", suggested_name.strip()) or "cover_letter"
+    html_output = build_cover_letter_html(letter_data)
+    text_output = build_cover_letter_text(letter_data)
+    docx_output = build_cover_letter_docx(letter_data) if DOCX_AVAILABLE else b""
+
+    col_html, col_txt, col_docx = st.columns(3)
+    with col_html:
+        st.download_button(
+            "Download as HTML",
+            data=html_output,
+            file_name=f"{safe_name}.html",
+            mime="text/html",
+            use_container_width=True,
+        )
+    with col_txt:
+        st.download_button(
+            "Download as TXT",
+            data=text_output,
+            file_name=f"{safe_name}.txt",
+            mime="text/plain",
+            use_container_width=True,
+        )
+    with col_docx:
+        if DOCX_AVAILABLE:
+            st.download_button(
+                "Download as Word",
+                data=docx_output,
+                file_name=f"{safe_name}.docx",
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                use_container_width=True,
+            )
+        else:
+            st.button("Download as Word", disabled=True, use_container_width=True)
+            st.caption("Word export unavailable: install `python-docx` from requirements.")
 
 
 def text_to_list(value: str) -> list[str]:
@@ -2696,70 +2943,156 @@ def render_editor_login() -> None:
 
 def render_cover_letter_formatter() -> None:
     st.title("Cover Letter Formatter")
-    st.caption("Populate the fields below to generate a clean, formatted cover letter.")
+    st.caption("Create, save, and download versioned cover letters per profile.")
+
+    profiles = fetch_profiles()
+    if not profiles:
+        st.error("No profiles available. Create one in the Editor first.")
+        return
+
+    profile_options = {f"{p['name']}{' (Default)' if p['is_default'] else ''}": p for p in profiles}
+    selected_profile_label = st.selectbox("Profile", list(profile_options.keys()), key="cover_profile_select")
+    selected_profile = profile_options[selected_profile_label]
+
+    cv_versions = fetch_versions(selected_profile["id"])
+    if not cv_versions:
+        st.error("No CV versions found for this profile.")
+        return
+
+    cv_version_options = {
+        f"{v['version_name']} ({v['updated_at'][:19]})": v for v in cv_versions
+    }
+    selected_cv_label = st.selectbox(
+        "Fetch Sender's Address from CV Version",
+        list(cv_version_options.keys()),
+        key="cover_cv_version_select",
+    )
+    selected_cv_version = cv_version_options[selected_cv_label]
+    selected_cv = fetch_version(selected_cv_version["id"])["cv"]
+    cv_default_letter = default_cover_letter_data(selected_cv)
+
+    cover_versions = fetch_cover_letter_versions(selected_profile["id"])
+    cover_option_labels = ["New Draft (from CV)"] + [
+        f"{v['version_name']} ({v['updated_at'][:19]})" for v in cover_versions
+    ]
+    selected_cover_label = st.selectbox(
+        "Cover Letter Version",
+        cover_option_labels,
+        key="cover_version_select",
+    )
+
+    selected_cover_version_id = None
+    selected_cover_version_name = ""
+    if selected_cover_label != "New Draft (from CV)":
+        selected_cover_version = next(
+            (v for v in cover_versions if f"{v['version_name']} ({v['updated_at'][:19]})" == selected_cover_label),
+            None,
+        )
+        if selected_cover_version:
+            selected_cover_version_id = selected_cover_version["id"]
+            selected_cover_version_name = selected_cover_version["version_name"]
+
+    if selected_cover_version_id:
+        saved_letter = fetch_cover_letter_version(selected_cover_version_id)
+        base_letter = cv_default_letter.copy()
+        if saved_letter and isinstance(saved_letter.get("letter"), dict):
+            base_letter.update(saved_letter["letter"])
+    else:
+        base_letter = cv_default_letter
+
+    editor_state_key = f"cover_editor::{selected_profile['id']}::{selected_cover_version_id or 'new'}::{selected_cv_version['id']}"
+    if st.session_state.get("cover_editor_source") != editor_state_key:
+        st.session_state["cover_editor_source"] = editor_state_key
+        st.session_state["cover_version_name"] = selected_cover_version_name or "Draft v1"
+        st.session_state["cover_name"] = base_letter.get("name", "")
+        st.session_state["cover_title"] = base_letter.get("title", "")
+        st.session_state["cover_sender_address"] = base_letter.get("sender_address", "")
+        st.session_state["cover_recipient_address"] = base_letter.get("recipient_address", "")
+        st.session_state["cover_subject"] = base_letter.get("subject", "")
+        st.session_state["cover_body"] = base_letter.get("body", "")
+        st.session_state["cover_signatory"] = base_letter.get("signatory", "")
+
+    st.info("Sender details are auto-fetched from the selected CV version. Use 'Refresh From CV' to re-apply them.")
+    if st.button("Refresh From CV", use_container_width=False):
+        st.session_state["cover_name"] = cv_default_letter.get("name", "")
+        st.session_state["cover_title"] = cv_default_letter.get("title", "")
+        st.session_state["cover_sender_address"] = cv_default_letter.get("sender_address", "")
+        if not str(st.session_state.get("cover_signatory", "")).strip():
+            st.session_state["cover_signatory"] = cv_default_letter.get("signatory", "")
+
+    version_name = st.text_input("Version Name", key="cover_version_name", placeholder="e.g., Data Analyst - Company X")
 
     col_left, col_right = st.columns(2)
     with col_left:
-        applicant_name = st.text_input("Name", placeholder="Your full name")
-        applicant_title = st.text_input("Title", placeholder="e.g., Software Engineer")
-        sender_address = st.text_area(
+        st.text_input("Name", key="cover_name", placeholder="Your full name")
+        st.text_input("Title", key="cover_title", placeholder="e.g., Software Engineer")
+        st.text_area(
             "Sender's Address",
+            key="cover_sender_address",
             placeholder="Street\nCity, State\nCountry",
             height=110,
         )
     with col_right:
-        recipient_address = st.text_area(
+        st.text_area(
             "Recipient's Address",
+            key="cover_recipient_address",
             placeholder="Hiring Manager\nCompany\nStreet\nCity, State",
             height=110,
         )
-        subject = st.text_input("Subject", placeholder="Application for ...")
-        signatory = st.text_input("Signatory", placeholder="Your Name")
+        st.text_input("Subject", key="cover_subject", placeholder="Application for ...")
+        st.text_input("Signatory", key="cover_signatory", placeholder="Your Name")
 
-    body = rich_text_area(
+    rich_text_area(
         "Body",
-        value="",
+        value=st.session_state.get("cover_body", ""),
         height=260,
+        key="cover_body",
         placeholder=(
             "Write your cover letter body here. Use a blank line between paragraphs for best formatting."
         ),
     )
 
-    sender_address_html = "<br>".join(html.escape(line.strip()) for line in sender_address.splitlines() if line.strip())
-    recipient_address_html = "<br>".join(
-        html.escape(line.strip()) for line in recipient_address.splitlines() if line.strip()
-    )
-    subject_html = html.escape(subject.strip())
-    applicant_name_html = html.escape(applicant_name.strip())
-    applicant_title_html = html.escape(applicant_title.strip())
-    signatory_html = html.escape(signatory.strip())
+    current_letter_data = {
+        "name": st.session_state.get("cover_name", ""),
+        "title": st.session_state.get("cover_title", ""),
+        "sender_address": st.session_state.get("cover_sender_address", ""),
+        "recipient_address": st.session_state.get("cover_recipient_address", ""),
+        "subject": st.session_state.get("cover_subject", ""),
+        "body": st.session_state.get("cover_body", ""),
+        "signatory": st.session_state.get("cover_signatory", ""),
+    }
 
-    paragraphs = [segment.strip() for segment in re.split(r"\n\s*\n", body.strip()) if segment.strip()]
-    body_html = "".join(
-        f"<p class='cover-letter-body'>{html.escape(paragraph).replace(chr(10), '<br>')}</p>" for paragraph in paragraphs
-    )
+    col_save, col_new = st.columns(2)
+    with col_save:
+        save_label = "Update Version" if selected_cover_version_id else "Save Draft"
+        if st.button(save_label, use_container_width=True):
+            if not str(version_name).strip():
+                st.error("Version name is required.")
+            elif selected_cover_version_id:
+                save_cover_letter_version(selected_cover_version_id, version_name, current_letter_data)
+                st.success("Cover letter version updated.")
+                st.rerun()
+            else:
+                create_cover_letter_version(selected_profile["id"], version_name, current_letter_data)
+                st.success("Cover letter draft saved.")
+                st.rerun()
+    with col_new:
+        if st.button("Save As New Version", use_container_width=True):
+            if not str(version_name).strip():
+                st.error("Version name is required.")
+            else:
+                create_cover_letter_version(selected_profile["id"], version_name, current_letter_data)
+                st.success("New cover letter version created.")
+                st.rerun()
 
-    preview_html = f"""
-    <div style="max-width: 860px; margin: 0 auto; background: #fff; border: 1px solid #d1d5db; padding: 28px; border-radius: 10px; font-family: Arial, sans-serif; color: #111827; line-height: 1.55;">
-        <div style="margin-bottom: 20px;">{sender_address_html}</div>
-        <div style="margin-bottom: 20px;">{recipient_address_html}</div>
-        <div style="margin-bottom: 16px;"><strong>Subject:</strong> {subject_html}</div>
-        {body_html}
-        <div style="margin-top: 24px;">Sincerely,</div>
-        <div style="margin-top: 56px; font-weight: 600;">{signatory_html or applicant_name_html}</div>
-        <div style="margin-top: 2px; color: #4b5563;">{applicant_title_html}</div>
-    </div>
-    <style>
-      .cover-letter-body {{
-        margin: 0 0 14px 0;
-        text-align: justify;
-        text-justify: inter-word;
-      }}
-    </style>
-    """
+    st.subheader("Download")
+    cover_letter_download_section(
+        current_letter_data,
+        f"{selected_profile['name'].replace(' ', '_')}_{str(version_name).strip() or 'cover_letter'}",
+    )
 
     st.subheader("Preview")
-    components.html(preview_html, height=760, scrolling=True)
+    components.html(build_cover_letter_html(current_letter_data), height=760, scrolling=True)
 
 
 st.set_page_config(page_title="CV Portfolio Manager", page_icon="💼", layout="wide")
@@ -2796,7 +3129,7 @@ if page == "Public View":
         render_cv_streamlit(default_version["cv"], template_choice)
 
 elif page == "Cover Letter":
-    st.sidebar.info("Format a cover letter for different job applications.")
+    st.sidebar.info("Format, save versions, and download cover letters.")
     render_cover_letter_formatter()
 
 else:
