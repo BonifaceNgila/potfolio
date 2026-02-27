@@ -863,11 +863,11 @@ def html_education(education: list[dict]) -> str:
             f"""
             <div class=\"education-entry\">
                 <div class=\"education-top\">
-                    <span class=\"education-course\">• {idx}. {course}</span>
+                    <span class=\"education-course\">{idx}. {course}</span>
                     <span class=\"education-timeline\">{timeline}</span>
                 </div>
                 <div class=\"education-institution\">
-                    • {idx}. {institution}
+                    {institution}
                 </div>
             </div>
             """
@@ -1840,7 +1840,7 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
             line_parts.append(f"({timeline})")
         entry_line = " - ".join(line_parts) if line_parts else ""
         if entry_line:
-            entry_line = f"• {idx}. {entry_line}"
+            entry_line = f"{idx}. {entry_line}"
         y = draw_pdf_wrapped_text(
             pdf, entry_line, left, y, content_width, bottom, top, on_new_page=on_new_page_callback
         )
@@ -2202,7 +2202,7 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
             if entry_line:
                 add_text_ops(
                     target_ops,
-                    f"• {idx}. {entry_line}",
+                    f"{idx}. {entry_line}",
                     column_width,
                     font_name="Helvetica",
                     font_size=10,
