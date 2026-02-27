@@ -1613,13 +1613,18 @@ def draw_pdf_section_title(
     return y - 16
 
 
+def safe_round_rect(pdf, x: float, y: float, width: float, height: float, radius: float, fill: int = 0, stroke: int = 1) -> None:
+    safe_radius = min(radius, abs(width) / 2, abs(height) / 2)
+    pdf.roundRect(x, y, width, height, safe_radius, fill=fill, stroke=stroke)
+
+
 def draw_section_card(pdf, x: float, y: float, width: float, height: float, fill: colors.Color, border: colors.Color) -> float:
     pdf.setFillColor(fill)
     pdf.setStrokeColor(border)
     pdf.setLineWidth(1)
-    pdf.roundRect(x, y - height, width, height, 12, fill=1, stroke=0)
+    safe_round_rect(pdf, x, y - height, width, height, 12, fill=1, stroke=0)
     pdf.setStrokeColor(border)
-    pdf.roundRect(x, y - height, width, height, 12, fill=0, stroke=1)
+    safe_round_rect(pdf, x, y - height, width, height, 12, fill=0, stroke=1)
     return y - height - 14
 
 
@@ -1707,7 +1712,7 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
             ribbon_height = 26
             ribbon_bottom = top - ribbon_height
             pdf.setFillColor(hero_background)
-            pdf.roundRect(left - 12, ribbon_bottom, content_width + 24, ribbon_height, 10, fill=1, stroke=0)
+            safe_round_rect(pdf, left - 12, ribbon_bottom, content_width + 24, ribbon_height, 10, fill=1, stroke=0)
             pdf.setFillColor(hero_accent)
             pdf.rect(left, ribbon_bottom + 5, content_width * 0.56, ribbon_height - 10, fill=1, stroke=0)
 
@@ -1725,7 +1730,7 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
         hero_height = 120
         hero_bottom = y - hero_height
         pdf.setFillColor(hero_background)
-        pdf.roundRect(left - 16, hero_bottom - 8, content_width + 32, hero_height + 16, 20, fill=1, stroke=0)
+        safe_round_rect(pdf, left - 16, hero_bottom - 8, content_width + 32, hero_height + 16, 20, fill=1, stroke=0)
         pdf.setFillColor(hero_accent)
         pdf.rect(left, hero_bottom + hero_height * 0.4, content_width * 0.68, hero_height * 0.5, fill=1, stroke=0)
         pdf.setFillColor(hero_text_color)
@@ -1971,27 +1976,27 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
         pdf.setLineWidth(1)
         if layout_style == "sidebar_skillset":
             pdf.setFillColor(panel_primary)
-            pdf.roundRect(left_x - 4, bottom - 4, left_width + 8, column_height, 10, fill=1, stroke=1)
+            safe_round_rect(pdf, left_x - 4, bottom - 4, left_width + 8, column_height, 10, fill=1, stroke=1)
             pdf.setFillColor(hero_background)
-            pdf.roundRect(right_x - 4, bottom - 4, right_width + 8, column_height, 10, fill=1, stroke=0)
+            safe_round_rect(pdf, right_x - 4, bottom - 4, right_width + 8, column_height, 10, fill=1, stroke=0)
             pdf.setStrokeColor(hero_accent)
-            pdf.roundRect(right_x - 4, bottom - 4, right_width + 8, column_height, 10, fill=0, stroke=1)
+            safe_round_rect(pdf, right_x - 4, bottom - 4, right_width + 8, column_height, 10, fill=0, stroke=1)
             return
         if layout_style == "slate_profile":
             pdf.setFillColor(panel_primary)
-            pdf.roundRect(left_x - 4, bottom - 4, left_width + 8, column_height, 10, fill=1, stroke=1)
+            safe_round_rect(pdf, left_x - 4, bottom - 4, left_width + 8, column_height, 10, fill=1, stroke=1)
             pdf.setStrokeColor(panel_border)
-            pdf.roundRect(left_x - 4, bottom - 4, left_width + 8, column_height, 10, fill=0, stroke=1)
+            safe_round_rect(pdf, left_x - 4, bottom - 4, left_width + 8, column_height, 10, fill=0, stroke=1)
             pdf.setFillColor(sidebar_background)
-            pdf.roundRect(right_x - 4, bottom - 4, right_width + 8, column_height, 10, fill=1, stroke=0)
+            safe_round_rect(pdf, right_x - 4, bottom - 4, right_width + 8, column_height, 10, fill=1, stroke=0)
             pdf.setStrokeColor(sidebar_border)
-            pdf.roundRect(right_x - 4, bottom - 4, right_width + 8, column_height, 10, fill=0, stroke=1)
+            safe_round_rect(pdf, right_x - 4, bottom - 4, right_width + 8, column_height, 10, fill=0, stroke=1)
             return
 
         pdf.setFillColor(panel_primary)
-        pdf.roundRect(left_x - 4, bottom - 4, left_width + 8, column_height, 8, fill=1, stroke=1)
+        safe_round_rect(pdf, left_x - 4, bottom - 4, left_width + 8, column_height, 8, fill=1, stroke=1)
         pdf.setFillColor(panel_secondary)
-        pdf.roundRect(right_x - 4, bottom - 4, right_width + 8, column_height, 8, fill=1, stroke=1)
+        safe_round_rect(pdf, right_x - 4, bottom - 4, right_width + 8, column_height, 8, fill=1, stroke=1)
 
     def draw_page_layout(first_page: bool) -> tuple[float, float]:
         pdf.setFillColor(background)
@@ -2002,10 +2007,10 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
                 name_banner_height = 78
                 banner_bottom = top - name_banner_height
                 pdf.setFillColor(panel_primary)
-                pdf.roundRect(margin - 6, banner_bottom - 10, total_width + 12, name_banner_height + 18, 8, fill=1, stroke=0)
+                safe_round_rect(pdf, margin - 6, banner_bottom - 10, total_width + 12, name_banner_height + 18, 8, fill=1, stroke=0)
                 pdf.setStrokeColor(panel_border)
                 pdf.setLineWidth(1)
-                pdf.roundRect(margin - 6, banner_bottom - 10, total_width + 12, name_banner_height + 18, 8, fill=0, stroke=1)
+                safe_round_rect(pdf, margin - 6, banner_bottom - 10, total_width + 12, name_banner_height + 18, 8, fill=0, stroke=1)
                 pdf.setFillColor(text_color)
                 pdf.setFont("Helvetica-Bold", 26)
                 pdf.drawCentredString(width / 2, banner_bottom + name_banner_height - 22, pdf_safe_text(cv.get("full_name", "")))
@@ -2018,7 +2023,7 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
             if layout_style == "sidebar_skillset":
                 draw_columns(top)
                 pdf.setFillColor(hero_accent)
-                pdf.roundRect(right_x + 8, top - 64, right_width - 16, 40, 8, fill=1, stroke=0)
+                safe_round_rect(pdf, right_x + 8, top - 64, right_width - 16, 40, 8, fill=1, stroke=0)
 
                 pdf.setFillColor(hero_text_color)
                 pdf.setFont("Helvetica-Bold", 17)
@@ -2045,16 +2050,16 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
                 header_height = 112
                 header_bottom = top - header_height
                 pdf.setFillColor(hero_background)
-                pdf.roundRect(left_x - 2, header_bottom, total_width + 4, header_height, 6, fill=1, stroke=0)
+                safe_round_rect(pdf, left_x - 2, header_bottom, total_width + 4, header_height, 6, fill=1, stroke=0)
                 contact_box_height = 76
                 contact_box_width = right_width + 10
                 contact_box_x = right_x - 2
                 contact_box_y = header_bottom + 18
                 pdf.setFillColor(hero_accent)
-                pdf.roundRect(contact_box_x, contact_box_y, contact_box_width, contact_box_height, 6, fill=1, stroke=0)
+                safe_round_rect(pdf, contact_box_x, contact_box_y, contact_box_width, contact_box_height, 6, fill=1, stroke=0)
                 pdf.setStrokeColor(colors.HexColor("#7da0c4"))
                 pdf.setLineWidth(0.8)
-                pdf.roundRect(contact_box_x, contact_box_y, contact_box_width, contact_box_height, 6, fill=0, stroke=1)
+                safe_round_rect(pdf, contact_box_x, contact_box_y, contact_box_width, contact_box_height, 6, fill=0, stroke=1)
 
                 pdf.setFillColor(hero_text_color)
                 pdf.setFont("Helvetica-Bold", 24)
@@ -2084,11 +2089,11 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
             hero_top = top
             hero_bottom = hero_top - hero_height
             pdf.setFillColor(hero_background)
-            pdf.roundRect(left_x - 12, hero_bottom - 10, total_width + 24, hero_height + 20, 20, fill=1, stroke=0)
+            safe_round_rect(pdf, left_x - 12, hero_bottom - 10, total_width + 24, hero_height + 20, 20, fill=1, stroke=0)
             pdf.setFillColor(hero_accent)
-            pdf.roundRect(left_x + 6, hero_bottom + hero_height * 0.32, total_width * 0.58, hero_height * 0.48, 18, fill=1, stroke=0)
+            safe_round_rect(pdf, left_x + 6, hero_bottom + hero_height * 0.32, total_width * 0.58, hero_height * 0.48, 18, fill=1, stroke=0)
             pdf.setFillColor(hero_strip)
-            pdf.roundRect(right_x - 8, hero_bottom + hero_height * 0.58, right_width + 16, hero_height * 0.22, 14, fill=1, stroke=0)
+            safe_round_rect(pdf, right_x - 8, hero_bottom + hero_height * 0.58, right_width + 16, hero_height * 0.22, 14, fill=1, stroke=0)
             pdf.setFillColor(hero_text_color)
             pdf.setFont("Helvetica-Bold", 24)
             pdf.drawString(left_x + 12, hero_bottom + hero_height - 28, pdf_safe_text(cv.get("full_name", "")))
@@ -2123,11 +2128,11 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
 
         pdf.setFillColor(hero_background)
         if layout_style == "professional_header":
-            pdf.roundRect(left_x - 2, ribbon_bottom, total_width + 4, ribbon_height, 5, fill=1, stroke=0)
+            safe_round_rect(pdf, left_x - 2, ribbon_bottom, total_width + 4, ribbon_height, 5, fill=1, stroke=0)
         else:
-            pdf.roundRect(left_x - 10, ribbon_bottom, total_width + 20, ribbon_height, 10, fill=1, stroke=0)
+            safe_round_rect(pdf, left_x - 10, ribbon_bottom, total_width + 20, ribbon_height, 10, fill=1, stroke=0)
         pdf.setFillColor(hero_strip)
-        pdf.roundRect(right_x - 4, ribbon_bottom + 5, right_width + 8, ribbon_height - 10, 8, fill=1, stroke=0)
+        safe_round_rect(pdf, right_x - 4, ribbon_bottom + 5, right_width + 8, ribbon_height - 10, 8, fill=1, stroke=0)
         panel_top = top - 8
         draw_columns(panel_top)
         pdf.setFillColor(text_color)
