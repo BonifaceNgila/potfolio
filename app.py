@@ -2694,6 +2694,74 @@ def render_editor_login() -> None:
             st.error("Invalid password.")
 
 
+def render_cover_letter_formatter() -> None:
+    st.title("Cover Letter Formatter")
+    st.caption("Populate the fields below to generate a clean, formatted cover letter.")
+
+    col_left, col_right = st.columns(2)
+    with col_left:
+        applicant_name = st.text_input("Name", placeholder="Your full name")
+        applicant_title = st.text_input("Title", placeholder="e.g., Software Engineer")
+        sender_address = st.text_area(
+            "Sender's Address",
+            placeholder="Street\nCity, State\nCountry",
+            height=110,
+        )
+    with col_right:
+        recipient_address = st.text_area(
+            "Recipient's Address",
+            placeholder="Hiring Manager\nCompany\nStreet\nCity, State",
+            height=110,
+        )
+        subject = st.text_input("Subject", placeholder="Application for ...")
+        signatory = st.text_input("Signatory", placeholder="Your Name")
+
+    body = rich_text_area(
+        "Body",
+        value="",
+        height=260,
+        placeholder=(
+            "Write your cover letter body here. Use a blank line between paragraphs for best formatting."
+        ),
+    )
+
+    sender_address_html = "<br>".join(html.escape(line.strip()) for line in sender_address.splitlines() if line.strip())
+    recipient_address_html = "<br>".join(
+        html.escape(line.strip()) for line in recipient_address.splitlines() if line.strip()
+    )
+    subject_html = html.escape(subject.strip())
+    applicant_name_html = html.escape(applicant_name.strip())
+    applicant_title_html = html.escape(applicant_title.strip())
+    signatory_html = html.escape(signatory.strip())
+
+    paragraphs = [segment.strip() for segment in re.split(r"\n\s*\n", body.strip()) if segment.strip()]
+    body_html = "".join(
+        f"<p class='cover-letter-body'>{html.escape(paragraph).replace(chr(10), '<br>')}</p>" for paragraph in paragraphs
+    )
+
+    preview_html = f"""
+    <div style="max-width: 860px; margin: 0 auto; background: #fff; border: 1px solid #d1d5db; padding: 28px; border-radius: 10px; font-family: Arial, sans-serif; color: #111827; line-height: 1.55;">
+        <div style="margin-bottom: 20px;">{sender_address_html}</div>
+        <div style="margin-bottom: 20px;">{recipient_address_html}</div>
+        <div style="margin-bottom: 16px;"><strong>Subject:</strong> {subject_html}</div>
+        {body_html}
+        <div style="margin-top: 24px;">Sincerely,</div>
+        <div style="margin-top: 56px; font-weight: 600;">{signatory_html or applicant_name_html}</div>
+        <div style="margin-top: 2px; color: #4b5563;">{applicant_title_html}</div>
+    </div>
+    <style>
+      .cover-letter-body {{
+        margin: 0 0 14px 0;
+        text-align: justify;
+        text-justify: inter-word;
+      }}
+    </style>
+    """
+
+    st.subheader("Preview")
+    components.html(preview_html, height=760, scrolling=True)
+
+
 st.set_page_config(page_title="CV Portfolio Manager", page_icon="💼", layout="wide")
 init_db()
 
@@ -2707,7 +2775,7 @@ if template_mapping_issues:
     st.sidebar.warning("Template mapping issues detected")
     for issue in template_mapping_issues:
         st.sidebar.caption(f"- {issue}")
-page = st.sidebar.radio("Navigation", ["Public View", "Editor"], index=0)
+page = st.sidebar.radio("Navigation", ["Public View", "Cover Letter", "Editor"], index=0)
 
 if page == "Public View":
     st.sidebar.info("Public view of the default CV profile.")
@@ -2726,6 +2794,10 @@ if page == "Public View":
 
     with st.expander("Preview selected template"):
         render_cv_streamlit(default_version["cv"], template_choice)
+
+elif page == "Cover Letter":
+    st.sidebar.info("Format a cover letter for different job applications.")
+    render_cover_letter_formatter()
 
 else:
     if not st.session_state.get("editor_authenticated", False):

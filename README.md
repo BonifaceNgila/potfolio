@@ -8,6 +8,7 @@ This project is a database-driven Streamlit CV portfolio with:
 - Public Visitor Page that shows the default CV
 - Downloadable CV templates in one-column and two-column layouts
 - Downloadable CV templates in HTML and PDF
+- A Cover Letter formatter page with justified body text
 
 ## Run locally
 
