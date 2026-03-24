@@ -64,4 +64,5 @@ You can download CVs as both HTML and PDF in these templates:
 ## Editing format notes
 
 - **Experience:** Each job block starts with `Role || Organization || Period`, then bullet lines starting with `-`.
+- **Projects:** Enter one project per line in the Projects field.
 - **Referees:** One line per referee in this format: `Name || Title || Email || Phone`.
