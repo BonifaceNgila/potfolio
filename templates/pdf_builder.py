@@ -83,10 +83,16 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
         y -= 24
         pdf.drawString(left, y, pdf_safe_text(f"Email: {cv.get('email', '')}"))
         y -= 28
-        pdf.setFillColor(link_color)
-        pdf.setFont("Helvetica", 13)
-        pdf.drawString(left, y, pdf_safe_text("LinkedIn | GitHub"))
-        y -= 24
+        link_parts = []
+        if cv.get("linkedin", "").strip():
+            link_parts.append(f"LinkedIn: {cv.get('linkedin', '')}")
+        if cv.get("github", "").strip():
+            link_parts.append(f"GitHub: {cv.get('github', '')}")
+        if link_parts:
+            pdf.setFillColor(link_color)
+            pdf.setFont("Helvetica", 11)
+            pdf.drawString(left, y, pdf_safe_text(" | ".join(link_parts)))
+            y -= 24
         pdf.setFillColor(text_color)
         on_new_page_callback = on_minimal_new_page
     else:
@@ -410,17 +416,34 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
                 pdf.drawString(right_x + 12, top - 154, "EMAIL")
                 pdf.setFont("Helvetica", 10)
                 pdf.drawString(right_x + 12, top - 168, pdf_safe_text(cv.get("email", "")))
-                return top - 22, top - 206
+                sidebar_y = top - 190
+                linkedin = cv.get("linkedin", "").strip()
+                github = cv.get("github", "").strip()
+                if linkedin:
+                    pdf.setFont("Helvetica-Bold", 8)
+                    pdf.drawString(right_x + 12, sidebar_y, "LINKEDIN")
+                    sidebar_y -= 12
+                    pdf.setFont("Helvetica", 8)
+                    pdf.drawString(right_x + 12, sidebar_y, pdf_safe_text(linkedin))
+                    sidebar_y -= 22
+                if github:
+                    pdf.setFont("Helvetica-Bold", 8)
+                    pdf.drawString(right_x + 12, sidebar_y, "GITHUB")
+                    sidebar_y -= 12
+                    pdf.setFont("Helvetica", 8)
+                    pdf.drawString(right_x + 12, sidebar_y, pdf_safe_text(github))
+                    sidebar_y -= 22
+                return top - 22, sidebar_y - 6
 
             if layout_style == "professional_header":
-                header_height = 112
+                header_height = 128
                 header_bottom = top - header_height
                 pdf.setFillColor(hero_background)
                 safe_round_rect(pdf, left_x - 2, header_bottom, total_width + 4, header_height, 6, fill=1, stroke=0)
-                contact_box_height = 76
+                contact_box_height = 96
                 contact_box_width = right_width + 10
                 contact_box_x = right_x - 2
-                contact_box_y = header_bottom + 18
+                contact_box_y = header_bottom + 14
                 pdf.setFillColor(hero_accent)
                 safe_round_rect(pdf, contact_box_x, contact_box_y, contact_box_width, contact_box_height, 6, fill=1, stroke=0)
                 pdf.setStrokeColor(colors.HexColor("#7da0c4"))
@@ -431,18 +454,28 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
                 pdf.drawString(left_x + 10, header_bottom + header_height - 36, pdf_safe_text(cv.get("full_name", "")))
                 pdf.setFont("Helvetica-Bold", 12)
                 pdf.drawString(left_x + 10, header_bottom + header_height - 58, pdf_safe_text(cv.get("headline", "")))
-                pdf.setFont("Helvetica-Bold", 11)
-                pdf.drawString(contact_box_x + 8, contact_box_y + contact_box_height - 18, pdf_safe_text("Location:"))
-                pdf.setFont("Helvetica", 11)
-                pdf.drawString(contact_box_x + 56, contact_box_y + contact_box_height - 18, pdf_safe_text(cv.get("location", "")))
-                pdf.setFont("Helvetica-Bold", 11)
-                pdf.drawString(contact_box_x + 8, contact_box_y + contact_box_height - 34, pdf_safe_text("Phone:"))
-                pdf.setFont("Helvetica", 11)
-                pdf.drawString(contact_box_x + 48, contact_box_y + contact_box_height - 34, pdf_safe_text(cv.get("phone", "")))
-                pdf.setFont("Helvetica-Bold", 11)
-                pdf.drawString(contact_box_x + 8, contact_box_y + contact_box_height - 50, pdf_safe_text("Email:"))
-                pdf.setFont("Helvetica", 11)
-                pdf.drawString(contact_box_x + 46, contact_box_y + contact_box_height - 50, pdf_safe_text(cv.get("email", "")))
+                pdf.setFont("Helvetica-Bold", 10)
+                pdf.drawString(contact_box_x + 8, contact_box_y + contact_box_height - 16, pdf_safe_text("Location:"))
+                pdf.setFont("Helvetica", 10)
+                pdf.drawString(contact_box_x + 56, contact_box_y + contact_box_height - 16, pdf_safe_text(cv.get("location", "")))
+                pdf.setFont("Helvetica-Bold", 10)
+                pdf.drawString(contact_box_x + 8, contact_box_y + contact_box_height - 32, pdf_safe_text("Phone:"))
+                pdf.setFont("Helvetica", 10)
+                pdf.drawString(contact_box_x + 48, contact_box_y + contact_box_height - 32, pdf_safe_text(cv.get("phone", "")))
+                pdf.setFont("Helvetica-Bold", 10)
+                pdf.drawString(contact_box_x + 8, contact_box_y + contact_box_height - 48, pdf_safe_text("Email:"))
+                pdf.setFont("Helvetica", 10)
+                pdf.drawString(contact_box_x + 46, contact_box_y + contact_box_height - 48, pdf_safe_text(cv.get("email", "")))
+                if cv.get("linkedin", "").strip():
+                    pdf.setFont("Helvetica-Bold", 10)
+                    pdf.drawString(contact_box_x + 8, contact_box_y + contact_box_height - 64, pdf_safe_text("LinkedIn:"))
+                    pdf.setFont("Helvetica", 8)
+                    pdf.drawString(contact_box_x + 58, contact_box_y + contact_box_height - 64, pdf_safe_text(cv.get("linkedin", "")))
+                if cv.get("github", "").strip():
+                    pdf.setFont("Helvetica-Bold", 10)
+                    pdf.drawString(contact_box_x + 8, contact_box_y + contact_box_height - 80, pdf_safe_text("GitHub:"))
+                    pdf.setFont("Helvetica", 8)
+                    pdf.drawString(contact_box_x + 50, contact_box_y + contact_box_height - 80, pdf_safe_text(cv.get("github", "")))
                 draw_columns(header_bottom - 10)
                 pdf.setFillColor(text_color)
                 start_y = header_bottom - 26
@@ -456,8 +489,6 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
             safe_round_rect(pdf, left_x - 12, hero_bottom - 10, total_width + 24, hero_height + 20, 20, fill=1, stroke=0)
             pdf.setFillColor(hero_accent)
             safe_round_rect(pdf, left_x + 6, hero_bottom + hero_height * 0.32, total_width * 0.58, hero_height * 0.48, 18, fill=1, stroke=0)
-            pdf.setFillColor(hero_strip)
-            safe_round_rect(pdf, right_x - 8, hero_bottom + hero_height * 0.58, right_width + 16, hero_height * 0.22, 14, fill=1, stroke=0)
             pdf.setFillColor(hero_text_color)
             pdf.setFont("Helvetica-Bold", 24)
             pdf.drawString(left_x + 12, hero_bottom + hero_height - 28, pdf_safe_text(cv.get("full_name", "")))
@@ -565,23 +596,28 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
         append_education_ops(left_ops, left_width)
 
     right_ops: list[dict] = []
-    contact_title = "Personal Details" if layout_style == "slate_profile" else "Contact"
-    _add_title_op(right_ops, contact_title)
 
     def add_contact_line(label: str, value: str) -> None:
         if str(value).strip():
             _add_text_ops(right_ops, f"{label}: {value}", right_width, font_name="Helvetica", font_size=9, leading=12)
 
     if layout_style == "slate_profile":
+        # Banner only shows name — need full Personal Details in sidebar
+        _add_title_op(right_ops, "Personal Details")
         add_contact_line("Name", cv.get("full_name", ""))
         add_contact_line("Address", cv.get("location", ""))
+        add_contact_line("Phone", cv.get("phone", ""))
+        add_contact_line("Email", cv.get("email", ""))
+        add_contact_line("LinkedIn", cv.get("linkedin", ""))
+        add_contact_line("GitHub", cv.get("github", ""))
+        _add_gap_op(right_ops, 6)
+    elif layout_style in ("professional_header", "sidebar_skillset"):
+        # Hero/sidebar header shows Location/Phone/Email; LinkedIn/GitHub now
+        # shown there too — no contact section needed in ops
+        pass
     else:
-        add_contact_line("Location", cv.get("location", ""))
-    add_contact_line("Phone", cv.get("phone", ""))
-    add_contact_line("Email", cv.get("email", ""))
-    add_contact_line("LinkedIn", cv.get("linkedin", ""))
-    add_contact_line("GitHub", cv.get("github", ""))
-    _add_gap_op(right_ops, 6)
+        # modern_header — hero shows all contact info; skip duplicate section
+        pass
 
     if layout_style == "slate_profile":
         append_education_ops(right_ops, right_width)
