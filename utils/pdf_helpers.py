@@ -42,7 +42,7 @@ def wrap_pdf_text(text: str, font_name: str, font_size: int, max_width: float) -
         return [pdf_safe_text(text)]
     words = pdf_safe_text(text).split()
     if not words:
-        return [""]
+        return []
 
     lines: list[str] = []
     current = words[0]
@@ -93,28 +93,20 @@ def draw_pdf_section_title(
     if not REPORTLAB_AVAILABLE:
         return y
     title_x = x
+    title_text = pdf_safe_text(title)
     pdf.setFillColor(title_color or colors.HexColor("#1E3A5F"))
     pdf.setFont("Helvetica-Bold", font_size)
-    pdf.drawString(title_x, y, pdf_safe_text(title))
+    pdf.drawString(title_x, y, title_text)
+    title_width = pdfmetrics.stringWidth(title_text, "Helvetica-Bold", font_size)
     pdf.setStrokeColor(line_color or colors.HexColor("#BFD7ED"))
     pdf.setLineWidth(1)
-    pdf.line(title_x, y - 3, title_x + 130, y - 3)
+    pdf.line(title_x, y - 3, title_x + title_width + 4, y - 3)
     return y - 16
 
 
 def safe_round_rect(pdf, x: float, y: float, width: float, height: float, radius: float, fill: int = 0, stroke: int = 1) -> None:
     safe_radius = min(radius, abs(width) / 2, abs(height) / 2)
     pdf.roundRect(x, y, width, height, safe_radius, fill=fill, stroke=stroke)
-
-
-def draw_section_card(pdf, x: float, y: float, width: float, height: float, fill, border) -> float:
-    pdf.setFillColor(fill)
-    pdf.setStrokeColor(border)
-    pdf.setLineWidth(1)
-    safe_round_rect(pdf, x, y - height, width, height, 12, fill=1, stroke=0)
-    pdf.setStrokeColor(border)
-    safe_round_rect(pdf, x, y - height, width, height, 12, fill=0, stroke=1)
-    return y - height - 14
 
 
 def ensure_pdf_space(pdf, y: float, needed_height: float, bottom_margin: float, top_reset: float, on_new_page=None) -> float:

@@ -154,13 +154,13 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
 
     def _competencies():
         nonlocal y
-        for item in cv.get("core_competencies", []):
+        for item in cv.get("core_competencies") or []:
             y = draw_pdf_wrapped_text(pdf, f"- {item}", left, y, content_width, bottom, top, on_new_page=on_new_page_callback)
         y -= 6
 
     def _experience():
         nonlocal y
-        for exp in cv.get("experience", []):
+        for exp in cv.get("experience") or []:
             y = ensure_pdf_space(pdf, y, 28, bottom, top, on_new_page=on_new_page_callback)
             y = draw_pdf_wrapped_text(
                 pdf,
@@ -169,13 +169,13 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
                 font_name="Helvetica-Bold", font_size=10, leading=13,
                 on_new_page=on_new_page_callback,
             )
-            for bullet in exp.get("bullets", []):
+            for bullet in exp.get("bullets") or []:
                 y = draw_pdf_wrapped_text(pdf, f"  - {bullet}", left, y, content_width, bottom, top, on_new_page=on_new_page_callback)
             y -= 3
 
     def _projects():
         nonlocal y
-        for item in cv.get("projects", []):
+        for item in cv.get("projects") or []:
             record = normalize_project_record(item)
             name = record.get("name", "")
             description = record.get("description", "")
@@ -193,7 +193,7 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
 
     def _education():
         nonlocal y
-        for idx, item in enumerate(cv.get("education", []), start=1):
+        for idx, item in enumerate(cv.get("education") or [], start=1):
             record = normalize_education_record(item)
             course = record.get("course", "")
             institution = record.get("institution", "")
@@ -208,17 +208,17 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
 
     def _certifications():
         nonlocal y
-        for item in cv.get("certifications", []):
+        for item in cv.get("certifications") or []:
             y = draw_pdf_wrapped_text(pdf, f"- {item}", left, y, content_width, bottom, top, on_new_page=on_new_page_callback)
 
     def _languages():
         nonlocal y
-        for item in cv.get("languages", []):
+        for item in cv.get("languages") or []:
             y = draw_pdf_wrapped_text(pdf, f"- {item}", left, y, content_width, bottom, top, on_new_page=on_new_page_callback)
 
     def _referees():
         nonlocal y
-        for idx, ref in enumerate(cv.get("referees", []), start=1):
+        for idx, ref in enumerate(cv.get("referees") or [], start=1):
             full_line = _format_referee_line(ref, idx)
             y = draw_pdf_wrapped_text(pdf, full_line, left, y, content_width, bottom, top, on_new_page=on_new_page_callback)
 
@@ -264,7 +264,7 @@ def _format_referee_line(ref: dict, idx: int) -> str:
 
 def _build_referee_ops(cv: dict, target_ops: list[dict], column_width: float) -> None:
     """Shared referee ops builder to eliminate duplication between layouts."""
-    for ref in cv.get("referees", []):
+    for ref in cv.get("referees") or []:
         name = ref.get("name", "")
         position = ref.get("position") or ref.get("title", "")
         organization = ref.get("organization", "")
@@ -510,17 +510,17 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
     _add_gap_op(left_ops, 6)
 
     _add_title_op(left_ops, "Professional Experience")
-    for exp in cv.get("experience", []):
+    for exp in cv.get("experience") or []:
         _add_text_ops(
             left_ops,
             f"{exp.get('role', '')} - {exp.get('organization', '')} | {exp.get('period', '')}",
             left_width, font_name="Helvetica-Bold", font_size=9, leading=12,
         )
-        for bullet in exp.get("bullets", []):
+        for bullet in exp.get("bullets") or []:
             _add_text_ops(left_ops, f"- {bullet}", left_width, font_name="Helvetica", font_size=9, leading=12)
         _add_gap_op(left_ops, 3)
 
-    projects = [item for item in cv.get("projects", []) if (isinstance(item, dict) and item.get("name", "").strip()) or (isinstance(item, str) and item.strip())]
+    projects = [item for item in (cv.get("projects") or []) if (isinstance(item, dict) and item.get("name", "").strip()) or (isinstance(item, str) and item.strip())]
     if projects:
         _add_title_op(left_ops, "Projects")
         for item in projects:
@@ -540,7 +540,7 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
         _add_gap_op(left_ops, 4)
 
     education_records: list[dict] = []
-    for item in cv.get("education", []):
+    for item in cv.get("education") or []:
         record = normalize_education_record(item)
         if any(str(record.get(field, "")).strip() for field in ("course", "institution", "timeline")):
             education_records.append(record)
@@ -587,7 +587,7 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
         if education_records:
             _add_gap_op(right_ops, 4)
 
-    competencies = [item for item in cv.get("core_competencies", []) if str(item).strip()]
+    competencies = [item for item in (cv.get("core_competencies") or []) if str(item).strip()]
     if layout_style == "slate_profile":
         skills = competencies[:6] if competencies else []
         technical = competencies[6:] if len(competencies) > 6 else []
@@ -611,20 +611,20 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
         _add_gap_op(right_ops, 4)
 
     _add_title_op(right_ops, "Languages")
-    for item in cv.get("languages", []):
+    for item in cv.get("languages") or []:
         _add_text_ops(right_ops, f"- {item}", right_width, font_name="Helvetica", font_size=9, leading=12)
     _add_gap_op(right_ops, 4)
 
     if layout_style in ("sidebar_skillset", "slate_profile"):
         _add_title_op(left_ops, "Certifications")
-        for item in cv.get("certifications", []):
+        for item in cv.get("certifications") or []:
             _add_text_ops(left_ops, f"- {item}", left_width, font_name="Helvetica", font_size=9, leading=12)
         _add_gap_op(left_ops, 4)
         _add_title_op(left_ops, "Referees")
         _build_referee_ops(cv, left_ops, left_width)
     else:
         _add_title_op(right_ops, "Certifications")
-        for item in cv.get("certifications", []):
+        for item in cv.get("certifications") or []:
             _add_text_ops(right_ops, f"- {item}", right_width, font_name="Helvetica", font_size=9, leading=12)
         _add_gap_op(right_ops, 4)
         _add_title_op(right_ops, "Referees")
@@ -649,6 +649,8 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
     right_index = 0
     y_left, y_right = draw_page_layout(first_page=True)
 
+    prev_left = -1
+    prev_right = -1
     while left_index < len(left_ops) or right_index < len(right_ops):
         while left_index < len(left_ops):
             op = left_ops[left_index]
@@ -667,6 +669,19 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
         if left_index >= len(left_ops) and right_index >= len(right_ops):
             break
 
+        # Safety guard: if no progress was made, force-render the blocking op
+        # to prevent an infinite loop when a single op exceeds page height.
+        if left_index == prev_left and right_index == prev_right:
+            if left_index < len(left_ops):
+                y_left = render_op(left_ops[left_index], left_x, y_left, "main")
+                left_index += 1
+            if right_index < len(right_ops):
+                y_right = render_op(right_ops[right_index], right_x, y_right, "sidebar")
+                right_index += 1
+            continue
+
+        prev_left = left_index
+        prev_right = right_index
         pdf.showPage()
         y_left, y_right = draw_page_layout(first_page=False)
 
@@ -696,8 +711,7 @@ def _add_text_ops(
     font_size: int = 10,
     leading: int = 13,
 ) -> None:
-    safe_text = pdf_safe_text(text)
-    for line in wrap_pdf_text(safe_text, font_name, font_size, max_width):
+    for line in wrap_pdf_text(text, font_name, font_size, max_width):
         ops.append(
             {
                 "kind": "line",
