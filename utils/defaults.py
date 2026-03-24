@@ -108,6 +108,12 @@ def default_cv_data() -> dict:
                 "technologies": "Power BI, SQL Server, Excel",
                 "link": "",
             },
+            {
+                "name": "CV Portfolio Manager",
+                "description": "Full-stack web application for creating, managing, and exporting professional CVs and cover letters with multiple themed templates, profile management, and PDF/DOCX/HTML export",
+                "technologies": "Python, Streamlit, SQLite, ReportLab, python-docx",
+                "link": "",
+            },
         ],
         "languages": ["English (Fluent)", "Swahili (Native)"],
         "referees": [
