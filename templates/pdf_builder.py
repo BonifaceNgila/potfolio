@@ -4,6 +4,7 @@ from utils.pdf_helpers import (
     REPORTLAB_AVAILABLE, colors, A4, pdfmetrics, canvas,
     pdf_safe_text, wrap_pdf_text, draw_pdf_wrapped_text,
     draw_pdf_section_title, safe_round_rect, ensure_pdf_space,
+    SECTION_ICON_SHAPES,
 )
 from utils.converters import normalize_education_record, normalize_project_record
 from templates.themes import normalize_template_name, get_pdf_theme

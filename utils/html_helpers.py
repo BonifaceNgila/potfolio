@@ -1,6 +1,7 @@
 import html
 
 from utils.converters import normalize_education_record, normalize_project_record
+from utils.pdf_helpers import SECTION_ICONS_HTML
 
 
 def html_list(items: list[str]) -> str:
@@ -118,8 +119,11 @@ def html_projects(projects: list) -> str:
 def section_header(title: str) -> str:
     if not title:
         return ""
+    icon = SECTION_ICONS_HTML.get(title, "")
+    icon_span = f"<span class='section-icon'>{icon}</span>" if icon else ""
     return (
         "<div class='section-heading'>"
+        f"{icon_span}"
         f"<h2>{html.escape(title)}</h2>"
         "</div>"
     )

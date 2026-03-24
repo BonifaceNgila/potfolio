@@ -13,6 +13,86 @@ except ModuleNotFoundError:
     REPORTLAB_AVAILABLE = False
 
 
+# Section icon shapes drawn natively via ReportLab canvas (no font needed).
+# Each value is a callable: draw_fn(pdf, x, center_y, size, color)
+def _draw_icon_circle(pdf, x, cy, size, color):
+    pdf.setFillColor(color)
+    pdf.circle(x + size / 2, cy, size / 2, fill=1, stroke=0)
+
+def _draw_icon_diamond(pdf, x, cy, size, color):
+    pdf.setFillColor(color)
+    hs = size / 2
+    p = pdf.beginPath()
+    p.moveTo(x + hs, cy + hs)
+    p.lineTo(x + size, cy)
+    p.lineTo(x + hs, cy - hs)
+    p.lineTo(x, cy)
+    p.close()
+    pdf.drawPath(p, fill=1, stroke=0)
+
+def _draw_icon_square(pdf, x, cy, size, color):
+    pdf.setFillColor(color)
+    pdf.rect(x, cy - size / 2, size, size, fill=1, stroke=0)
+
+def _draw_icon_bar(pdf, x, cy, size, color):
+    pdf.setFillColor(color)
+    pdf.rect(x, cy - size * 0.35, size * 0.35, size * 0.7, fill=1, stroke=0)
+
+def _draw_icon_triangle(pdf, x, cy, size, color):
+    pdf.setFillColor(color)
+    hs = size / 2
+    p = pdf.beginPath()
+    p.moveTo(x + hs, cy + hs)
+    p.lineTo(x + size, cy - hs)
+    p.lineTo(x, cy - hs)
+    p.close()
+    pdf.drawPath(p, fill=1, stroke=0)
+
+def _draw_icon_star(pdf, x, cy, size, color):
+    """Simple 4-point star using two overlapping squares."""
+    pdf.setFillColor(color)
+    hs = size / 2
+    # rotated square
+    p = pdf.beginPath()
+    p.moveTo(x + hs, cy + hs)
+    p.lineTo(x + size, cy)
+    p.lineTo(x + hs, cy - hs)
+    p.lineTo(x, cy)
+    p.close()
+    pdf.drawPath(p, fill=1, stroke=0)
+    # small inner square
+    q = size * 0.25
+    pdf.rect(x + hs - q, cy - q, q * 2, q * 2, fill=1, stroke=0)
+
+
+SECTION_ICON_SHAPES: dict[str, callable] = {
+    "Profile": _draw_icon_circle,
+    "Core Competencies": _draw_icon_diamond,
+    "Professional Experience": _draw_icon_bar,
+    "Projects": _draw_icon_square,
+    "Education": _draw_icon_triangle,
+    "Certifications": _draw_icon_star,
+    "Languages": _draw_icon_circle,
+    "Referees": _draw_icon_diamond,
+    "Contact": _draw_icon_circle,
+    "Personal Details": _draw_icon_circle,
+    "Skills": _draw_icon_diamond,
+    "Technical Proficiencies": _draw_icon_square,
+}
+
+# Unicode emoji icons for HTML section headers (rendered by the browser).
+SECTION_ICONS_HTML: dict[str, str] = {
+    "Profile": "\U0001F464",           # bust in silhouette
+    "Core Competencies": "\U0001F4A1", # light bulb
+    "Professional Experience": "\U0001F4BC",  # briefcase
+    "Projects": "\U0001F680",          # rocket
+    "Education": "\U0001F393",         # graduation cap
+    "Certifications": "\U0001F3C6",    # trophy
+    "Languages": "\U0001F310",         # globe
+    "Referees": "\U0001F465",          # busts in silhouette
+}
+
+
 def pdf_safe_text(value: str) -> str:
     text = str(value).replace("\n", " ")
     # Normalize Unicode dashes/hyphens to ASCII hyphen-minus so they
@@ -92,15 +172,22 @@ def draw_pdf_section_title(
 ) -> float:
     if not REPORTLAB_AVAILABLE:
         return y
-    title_x = x
+    resolved_title_color = title_color or colors.HexColor("#1E3A5F")
+    icon_fn = SECTION_ICON_SHAPES.get(title)
+    icon_advance = 0
+    if icon_fn:
+        icon_size = font_size * 0.7
+        icon_fn(pdf, x, y + font_size * 0.2, icon_size, resolved_title_color)
+        icon_advance = icon_size + 5
+    title_x = x + icon_advance
     title_text = pdf_safe_text(title)
-    pdf.setFillColor(title_color or colors.HexColor("#1E3A5F"))
+    pdf.setFillColor(resolved_title_color)
     pdf.setFont("Helvetica-Bold", font_size)
     pdf.drawString(title_x, y, title_text)
     title_width = pdfmetrics.stringWidth(title_text, "Helvetica-Bold", font_size)
     pdf.setStrokeColor(line_color or colors.HexColor("#BFD7ED"))
     pdf.setLineWidth(1)
-    pdf.line(title_x, y - 3, title_x + title_width + 4, y - 3)
+    pdf.line(x, y - 3, title_x + title_width + 4, y - 3)
     return y - 16
 
 

@@ -80,11 +80,14 @@ def build_html(cv: dict, template: str) -> str:
 
     one_column_css = _one_column_classic_css() + shared_section_styles
     one_column_minimal_css = _one_column_minimal_css() + shared_section_styles
+    one_column_executive_css = _one_column_executive_css() + shared_section_styles
     two_column_css = _two_column_professional_css() + shared_section_styles
     two_column_sidebar_css = _two_column_sidebar_css() + shared_section_styles
     two_column_sidebar_skillset_css = _two_column_sidebar_skillset_css() + shared_section_styles
     two_column_accent_css = _two_column_accent_css() + shared_section_styles
     two_column_slate_css = _two_column_slate_css() + shared_section_styles
+    two_column_emerald_css = _two_column_emerald_css() + shared_section_styles
+    two_column_burgundy_css = _two_column_burgundy_css() + shared_section_styles
 
     if template == "One Column - Minimal":
         return f"""
@@ -312,6 +315,81 @@ def build_html(cv: dict, template: str) -> str:
                         </div>
                         {referees_sec}
                     </div>
+                </div>
+            </div>
+        </body></html>
+        """
+
+    if template == "One Column - Executive":
+        return f"""
+        <html><head><meta charset='UTF-8'><style>{one_column_executive_css}</style></head>
+        <body>
+            <div class='cv'>
+                <div class='hero'>
+                    <h1>{name}</h1>
+                    <p class='headline'>{headline}</p>
+                    <div class='hero-meta'>
+                        {contact}
+                        {links}
+                    </div>
+                </div>
+                <div class='content'>
+                    <div class='section-block'>{section_main}</div>
+                    <div class='section-block'>{section_side}</div>
+                </div>
+            </div>
+        </body></html>
+        """
+
+    if template == "Two Column - Emerald":
+        return f"""
+        <html><head><meta charset='UTF-8'><style>{two_column_emerald_css}</style></head>
+        <body>
+            <div class='cv'>
+                <div class='header'>
+                    <div class='header-grid'>
+                        <div class='header-main'>
+                            <h1>{name}</h1>
+                            <p class='headline'>{headline}</p>
+                        </div>
+                        <div class='header-contact'>
+                            {contact}
+                            {links}
+                        </div>
+                    </div>
+                </div>
+                <div class='grid'>
+                    <div class='main-panel'>{section_main}</div>
+                    <div class='side-panel'>{section_side}</div>
+                </div>
+            </div>
+        </body></html>
+        """
+
+    if template == "Two Column - Burgundy":
+        return f"""
+        <html><head><meta charset='UTF-8'><style>{two_column_burgundy_css}</style></head>
+        <body>
+            <div class='cv'>
+                <div class='hero'>
+                    <div>
+                        <h1>{name}</h1>
+                        <p class='headline'>{headline}</p>
+                    </div>
+                    <div class='hero-meta'>
+                        {contact}
+                        <div class='hero-links'>
+                            {links}
+                        </div>
+                    </div>
+                </div>
+                <div class='main'>
+                    <div class='main-panel'>
+                        {section_main}
+                    </div>
+                    <aside class='aside-panel'>
+                        {section_side}
+                    </aside>
                 </div>
             </div>
         </body></html>
@@ -615,4 +693,131 @@ def _two_column_slate_css() -> str:
     .referee strong { display: block; font-size: 16px; letter-spacing: 1px; }
     .referee-contact, .referee-title { display: block; font-size: 13px; color: #4b5563; margin-top: 4px; }
     .divider { height: 1px; background: #e2e8f0; margin: 32px 0 18px; }
+    """
+
+
+def _one_column_executive_css() -> str:
+    return """
+    body {
+        font-family: 'Georgia', 'Times New Roman', serif;
+        margin: 0;
+        background: #faf9f6;
+        color: #1a1a1a;
+        padding: 24px;
+    }
+    .cv {
+        max-width: 900px;
+        margin: auto;
+        background: #ffffff;
+        border: 1px solid #e0ddd5;
+        box-shadow: 0 12px 36px rgba(0,0,0,0.08);
+    }
+    .hero {
+        padding: 40px 42px 32px;
+        background: linear-gradient(135deg, #1b1b1b, #2c2c2c);
+        color: #faf9f6;
+        border-bottom: 4px solid #c9a84c;
+    }
+    .hero h1 {
+        margin: 0;
+        font-size: 38px;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        font-weight: 700;
+    }
+    .hero .headline {
+        margin: 10px 0 0;
+        font-size: 16px;
+        color: #c9a84c;
+        font-weight: 400;
+        letter-spacing: 1px;
+    }
+    .hero-meta {
+        margin-top: 16px;
+        font-size: 14px;
+        line-height: 1.6;
+        color: #d4d0c8;
+    }
+    .hero-meta strong { color: #c9a84c; }
+    .hero-meta a { color: #c9a84c; text-decoration: none; }
+    .content {
+        padding: 32px 42px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 28px;
+    }
+    .section-block {
+        padding: 20px 0;
+        border-bottom: 1px solid #e0ddd5;
+    }
+    .section-block:last-child { border-bottom: none; }
+    h2 { color: #1b1b1b; font-size: 18px; letter-spacing: 2px; text-transform: uppercase; border-bottom: 2px solid #c9a84c; padding-bottom: 6px; }
+    p { line-height: 1.7; }
+    ul { margin-top: 10px; padding-left: 20px; }
+    li { margin-bottom: 6px; }
+    a { color: #c9a84c; }
+    .section-heading h2 { color: #1b1b1b; }
+    .education-entry { border-left-color: #c9a84c; background: rgba(201,168,76,0.06); }
+    .project-entry { border-left-color: #c9a84c; background: rgba(201,168,76,0.04); }
+    .project-entry a { color: #c9a84c; }
+    """
+
+
+def _two_column_emerald_css() -> str:
+    return """
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0fdf4; margin: 0; padding: 24px; color: #064e3b; }
+    .cv { max-width: 1100px; margin: auto; background: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 8px 24px rgba(6,78,59,0.12); }
+    .header { padding: 28px 32px; border-bottom: 3px solid #6ee7b7; background: linear-gradient(135deg, #064e3b, #065f46); color: #f0fdf4; }
+    .header-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; align-items: end; }
+    .header-main h1 { margin: 0; font-size: 34px; line-height: 1.05; letter-spacing: 0.6px; color: #ffffff; }
+    .headline { margin: 8px 0 0 0; font-size: 15px; color: #a7f3d0; font-weight: 500; }
+    .header-contact { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.24); border-radius: 8px; padding: 10px 12px; font-size: 13px; }
+    .header-contact p { margin: 0 0 6px 0; line-height: 1.4; color: #f0fdf4; }
+    .header-contact strong { color: #6ee7b7; }
+    .header-contact a { color: #6ee7b7; }
+    .grid { display: grid; grid-template-columns: 1.85fr 1fr; gap: 20px; padding: 24px; }
+    .main-panel { background: #ffffff; border: 1px solid #a7f3d0; border-radius: 8px; padding: 16px 18px; }
+    .side-panel { background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 16px 16px; }
+    h2 { margin: 0 0 10px 0; color: #064e3b; border-bottom: 2px solid #6ee7b7; padding-bottom: 4px; font-size: 22px; }
+    h4 { margin: 0 0 4px 0; color: #064e3b; }
+    p { line-height: 1.45; }
+    ul { margin: 8px 0 12px 18px; padding: 0; }
+    li { margin-bottom: 6px; }
+    a { color: #059669; }
+    .section-heading h2 { color: #064e3b; }
+    .education-entry { border-left-color: #10b981; background: rgba(16,185,129,0.06); }
+    .project-entry { border-left-color: #10b981; background: rgba(16,185,129,0.04); }
+    .project-entry a { color: #059669; }
+    .referees-list { margin-top: 8px; padding-left: 0; }
+    .referees-list li { margin-bottom: 6px; list-style: none; }
+    """
+
+
+def _two_column_burgundy_css() -> str:
+    return """
+    body { font-family: 'Inter', 'Segoe UI', sans-serif; margin: 0; background: #fef2f2; padding: 32px; }
+    .cv { max-width: 960px; margin: auto; background: #ffffff; border-radius: 22px; box-shadow: 0 20px 45px rgba(127,29,29,0.18); overflow: hidden; }
+    .hero { background: linear-gradient(135deg, #4a0404, #7f1d1d); color: #fef2f2; padding: 36px 40px; display: grid; grid-template-columns: 2fr 1fr; gap: 24px; align-items: end; }
+    .hero h1 { margin: 0; font-size: 36px; letter-spacing: 0.6px; }
+    .hero .headline { margin: 6px 0 0; font-size: 16px; color: #fecaca; }
+    .hero-meta { font-size: 14px; line-height: 1.6; }
+    .hero-meta strong { display: block; color: #fca5a5; text-transform: uppercase; letter-spacing: 0.5px; font-size: 10px; margin-top: 10px; }
+    .hero-meta a { color: #fca5a5; }
+    .hero-links { margin-top: 12px; }
+    .hero-links a { color: #fca5a5; margin-right: 12px; font-weight: 600; text-decoration: none; }
+    .main { padding: 36px; display: grid; grid-template-columns: 1.7fr 0.9fr; gap: 24px; }
+    .main-panel { border-right: 1px solid #fecaca; padding-right: 24px; }
+    .aside-panel { padding-left: 24px; }
+    .main-panel h2, .aside-panel h2 { margin-top: 0; color: #7f1d1d; font-size: 22px; border-bottom: 2px solid #fecaca; padding-bottom: 6px; margin-bottom: 14px; }
+    .main-panel .job { margin-bottom: 12px; }
+    .main-panel .meta { color: #991b1b; margin-bottom: 8px; }
+    .aside-panel ul { margin: 0; padding-left: 18px; line-height: 1.6; }
+    .aside-panel li { margin-bottom: 6px; }
+    a { color: #dc2626; }
+    .section-heading h2 { color: #7f1d1d; }
+    .education-entry { border-left-color: #ef4444; background: rgba(239,68,68,0.05); }
+    .project-entry { border-left-color: #ef4444; background: rgba(239,68,68,0.03); }
+    .project-entry a { color: #dc2626; }
+    .referees-list { margin-top: 8px; padding-left: 0; }
+    .referees-list li { margin-bottom: 6px; list-style: none; }
     """
