@@ -14,7 +14,27 @@ except ModuleNotFoundError:
 
 
 def pdf_safe_text(value: str) -> str:
-    return str(value).replace("\n", " ").encode("latin-1", "replace").decode("latin-1")
+    text = str(value).replace("\n", " ")
+    # Normalize Unicode dashes/hyphens to ASCII hyphen-minus so they
+    # survive the latin-1 encoding instead of becoming '?'
+    text = (
+        text
+        .replace("\u2010", "-")   # hyphen
+        .replace("\u2011", "-")   # non-breaking hyphen
+        .replace("\u2012", "-")   # figure dash
+        .replace("\u2013", "-")   # en-dash
+        .replace("\u2014", "-")   # em-dash
+        .replace("\u2015", "-")   # horizontal bar
+        .replace("\u2212", "-")   # minus sign
+        .replace("\u00ad", "-")   # soft hyphen
+        .replace("\u2018", "'")   # left single quote
+        .replace("\u2019", "'")   # right single quote
+        .replace("\u201c", '"')   # left double quote
+        .replace("\u201d", '"')   # right double quote
+        .replace("\u2026", "...") # ellipsis
+        .replace("\u2022", "-")   # bullet
+    )
+    return text.encode("latin-1", "replace").decode("latin-1")
 
 
 def wrap_pdf_text(text: str, font_name: str, font_size: int, max_width: float) -> list[str]:
