@@ -10,6 +10,120 @@ from utils.converters import normalize_education_record, normalize_project_recor
 from templates.themes import normalize_template_name, get_pdf_theme
 
 
+def _measure_wrapped_text_height(
+    text: str,
+    font_name: str,
+    font_size: int,
+    max_width: float,
+    leading: int,
+) -> int:
+    if not str(text).strip():
+        return 0
+    return len(wrap_pdf_text(text, font_name, font_size, max_width)) * leading
+
+
+def _draw_wrapped_lines(
+    pdf,
+    text: str,
+    x: float,
+    y: float,
+    max_width: float,
+    font_name: str,
+    font_size: int,
+    leading: int,
+    fill_color=None,
+    align: str = "left",
+) -> float:
+    lines = wrap_pdf_text(text, font_name, font_size, max_width)
+    if not lines:
+        return y
+
+    pdf.setFont(font_name, font_size)
+    if fill_color is not None:
+        pdf.setFillColor(fill_color)
+
+    for line in lines:
+        if align == "center":
+            pdf.drawCentredString(x, y, line)
+        elif align == "right":
+            pdf.drawRightString(x, y, line)
+        else:
+            pdf.drawString(x, y, line)
+        y -= leading
+    return y
+
+
+def _build_contact_fields(cv: dict) -> list[tuple[str, str]]:
+    fields = [
+        ("Location", cv.get("location", "")),
+        ("Phone", cv.get("phone", "")),
+        ("Email", cv.get("email", "")),
+        ("LinkedIn", cv.get("linkedin", "")),
+        ("GitHub", cv.get("github", "")),
+    ]
+    return [(label, str(value).strip()) for label, value in fields if str(value).strip()]
+
+
+def _measure_contact_blocks_height(
+    contact_fields: list[tuple[str, str]],
+    max_width: float,
+    label_font_size: int,
+    value_font_size: int,
+    value_leading: int,
+    block_gap: int = 6,
+) -> int:
+    total_height = 0
+    for index, (_, value) in enumerate(contact_fields):
+        total_height += label_font_size + 4
+        total_height += max(
+            value_leading,
+            _measure_wrapped_text_height(
+                value,
+                "Helvetica",
+                value_font_size,
+                max_width,
+                value_leading,
+            ),
+        )
+        if index < len(contact_fields) - 1:
+            total_height += block_gap
+    return total_height
+
+
+def _draw_contact_blocks(
+    pdf,
+    contact_fields: list[tuple[str, str]],
+    x: float,
+    y: float,
+    max_width: float,
+    label_font_size: int,
+    value_font_size: int,
+    value_leading: int,
+    label_color,
+    value_color,
+    block_gap: int = 6,
+) -> float:
+    for index, (label, value) in enumerate(contact_fields):
+        pdf.setFillColor(label_color)
+        pdf.setFont("Helvetica-Bold", label_font_size)
+        pdf.drawString(x, y, pdf_safe_text(label.upper()))
+        y -= label_font_size + 4
+        y = _draw_wrapped_lines(
+            pdf,
+            value,
+            x,
+            y,
+            max_width,
+            "Helvetica",
+            value_font_size,
+            value_leading,
+            fill_color=value_color,
+        )
+        if index < len(contact_fields) - 1:
+            y -= block_gap
+    return y
+
+
 def build_pdf(cv: dict, template: str) -> bytes:
     if not REPORTLAB_AVAILABLE:
         return b""
@@ -43,6 +157,14 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
         "section_line_color",
         colors.HexColor("#BFD7ED") if layout_style == "minimal_clean" else border_color,
     )
+    header_min_height = theme.get("header_min_height", 126)
+    header_name_font_size = theme.get("header_name_font_size", 22)
+    header_headline_font_size = theme.get("header_headline_font_size", 12)
+    header_contact_label_font_size = theme.get("header_contact_label_font_size", 8)
+    header_contact_font_size = theme.get("header_contact_font_size", 9)
+    header_contact_leading = theme.get("header_contact_leading", header_contact_font_size + 2)
+    header_meta_ratio = min(max(theme.get("header_meta_ratio", 0.34), 0.26), 0.4)
+    contact_fields = _build_contact_fields(cv)
 
     buffer = BytesIO()
     pdf = canvas.Canvas(buffer, pagesize=A4)
@@ -68,31 +190,45 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
             return top - 6
 
         draw_minimal_frame()
-        pdf.setFillColor(hero_text_color)
-        pdf.setFont("Helvetica-Bold", 30)
-        pdf.drawString(left, y, pdf_safe_text(cv.get("full_name", "")))
-        y -= 34
-        pdf.setFont("Helvetica", 17)
-        pdf.drawString(left, y, pdf_safe_text(cv.get("headline", "")))
-        y -= 28
-        pdf.setFillColor(text_color)
-        pdf.setFont("Helvetica", 14)
-        pdf.drawString(left, y, pdf_safe_text(f"Location: {cv.get('location', '')}"))
-        y -= 24
-        pdf.drawString(left, y, pdf_safe_text(f"Phone: {cv.get('phone', '')}"))
-        y -= 24
-        pdf.drawString(left, y, pdf_safe_text(f"Email: {cv.get('email', '')}"))
-        y -= 28
-        link_parts = []
-        if cv.get("linkedin", "").strip():
-            link_parts.append(f"LinkedIn: {cv.get('linkedin', '')}")
-        if cv.get("github", "").strip():
-            link_parts.append(f"GitHub: {cv.get('github', '')}")
-        if link_parts:
-            pdf.setFillColor(link_color)
-            pdf.setFont("Helvetica", 11)
-            pdf.drawString(left, y, pdf_safe_text(" | ".join(link_parts)))
-            y -= 24
+        header_width = content_width - 8
+        y = _draw_wrapped_lines(
+            pdf,
+            cv.get("full_name", ""),
+            left,
+            y,
+            header_width,
+            "Helvetica-Bold",
+            header_name_font_size,
+            header_name_font_size + 4,
+            fill_color=hero_text_color,
+        )
+        y -= 4
+        y = _draw_wrapped_lines(
+            pdf,
+            cv.get("headline", ""),
+            left,
+            y,
+            header_width,
+            "Helvetica",
+            header_headline_font_size,
+            header_headline_font_size + 4,
+            fill_color=hero_text_color,
+        )
+        if contact_fields:
+            y -= 10
+            y = _draw_contact_blocks(
+                pdf,
+                contact_fields,
+                left,
+                y,
+                header_width,
+                header_contact_label_font_size,
+                header_contact_font_size,
+                header_contact_leading,
+                theme.get("hero_strip", colors.HexColor("#1e3a5f")),
+                text_color,
+            )
+            y -= 6
         pdf.setFillColor(text_color)
         on_new_page_callback = on_minimal_new_page
     else:
@@ -118,26 +254,77 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
 
         pdf.setFillColor(background)
         pdf.rect(0, 0, width, height, fill=1, stroke=0)
-        hero_height = 120
+        meta_width = min(max(content_width * header_meta_ratio, 150), content_width * 0.42)
+        left_header_width = content_width - meta_width - 24
+        name_leading = header_name_font_size + 4
+        headline_leading = header_headline_font_size + 4
+        left_header_height = _measure_wrapped_text_height(
+            cv.get("full_name", ""),
+            "Helvetica-Bold",
+            header_name_font_size,
+            left_header_width,
+            name_leading,
+        )
+        if str(cv.get("headline", "")).strip():
+            left_header_height += 6 + _measure_wrapped_text_height(
+                cv.get("headline", ""),
+                "Helvetica",
+                header_headline_font_size,
+                left_header_width,
+                headline_leading,
+            )
+        meta_header_height = _measure_contact_blocks_height(
+            contact_fields,
+            meta_width,
+            header_contact_label_font_size,
+            header_contact_font_size,
+            header_contact_leading,
+        )
+        hero_height = max(header_min_height, max(left_header_height, meta_header_height) + 36)
         hero_bottom = y - hero_height
         pdf.setFillColor(hero_background)
         safe_round_rect(pdf, left - 16, hero_bottom - 8, content_width + 32, hero_height + 16, 20, fill=1, stroke=0)
         pdf.setFillColor(hero_accent)
-        pdf.rect(left, hero_bottom + hero_height * 0.4, content_width * 0.68, hero_height * 0.5, fill=1, stroke=0)
-        pdf.setFillColor(hero_text_color)
-        pdf.setFont("Helvetica-Bold", 22)
-        pdf.drawString(left + 8, hero_bottom + hero_height - 28, pdf_safe_text(cv.get("full_name", "")))
-        pdf.setFont("Helvetica", 12)
-        pdf.drawString(left + 8, hero_bottom + hero_height - 48, pdf_safe_text(cv.get("headline", "")))
-        pdf.setFont("Helvetica", 10)
-        pdf.drawString(right - 160, hero_bottom + hero_height - 28, pdf_safe_text(f"Location: {cv.get('location', '')}"))
-        pdf.drawString(right - 160, hero_bottom + hero_height - 44, pdf_safe_text(f"Phone: {cv.get('phone', '')}"))
-        pdf.drawString(right - 160, hero_bottom + hero_height - 60, pdf_safe_text(f"Email: {cv.get('email', '')}"))
-        y = hero_bottom - 28
-        pdf.setFillColor(link_color)
-        pdf.drawString(left, y + 8, pdf_safe_text(f"LinkedIn: {cv.get('linkedin', '')} | GitHub: {cv.get('github', '')}"))
-        pdf.setFillColor(text_color)
-        y -= 16
+        accent_height = min(max(left_header_height + 18, 42), hero_height * 0.6)
+        accent_y = hero_bottom + ((hero_height - accent_height) / 2)
+        pdf.rect(left, accent_y, min(content_width * 0.68, left_header_width + 22), accent_height, fill=1, stroke=0)
+        text_y = hero_bottom + hero_height - 24
+        text_y = _draw_wrapped_lines(
+            pdf,
+            cv.get("full_name", ""),
+            left + 8,
+            text_y,
+            left_header_width,
+            "Helvetica-Bold",
+            header_name_font_size,
+            name_leading,
+            fill_color=hero_text_color,
+        )
+        text_y -= 6
+        _draw_wrapped_lines(
+            pdf,
+            cv.get("headline", ""),
+            left + 8,
+            text_y,
+            left_header_width,
+            "Helvetica",
+            header_headline_font_size,
+            headline_leading,
+            fill_color=hero_text_color,
+        )
+        _draw_contact_blocks(
+            pdf,
+            contact_fields,
+            right - meta_width,
+            hero_bottom + hero_height - 18,
+            meta_width,
+            header_contact_label_font_size,
+            header_contact_font_size,
+            header_contact_leading,
+            link_color,
+            hero_text_color,
+        )
+        y = hero_bottom - 18
         pdf.setFillColor(panel_primary)
         pdf.rect(left - 12, bottom - 6, content_width + 24, y - bottom + 24, fill=1, stroke=0)
         pdf.setStrokeColor(border_color)
@@ -313,6 +500,14 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
     sidebar_section_line_color = theme.get("sidebar_section_line_color", section_line_color)
     sidebar_background = theme.get("sidebar_background", panel_secondary)
     sidebar_border = theme.get("sidebar_border", panel_border)
+    header_min_height = theme.get("header_min_height", 132)
+    header_name_font_size = theme.get("header_name_font_size", 24)
+    header_headline_font_size = theme.get("header_headline_font_size", 12)
+    header_contact_label_font_size = theme.get("header_contact_label_font_size", 8)
+    header_contact_font_size = theme.get("header_contact_font_size", 9)
+    header_contact_leading = theme.get("header_contact_leading", header_contact_font_size + 2)
+    main_ratio = min(max(theme.get("main_ratio", 0.62), 0.55), 0.72)
+    contact_fields = _build_contact_fields(cv)
 
     buffer = BytesIO()
     pdf = canvas.Canvas(buffer, pagesize=A4)
@@ -327,21 +522,23 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
     bottom = 28
     total_width = width - (2 * margin)
     if layout_style == "sidebar_skillset":
-        sidebar_width = total_width * 0.34
+        sidebar_ratio = min(max(theme.get("sidebar_ratio", 0.36), 0.3), 0.42)
+        sidebar_width = total_width * sidebar_ratio
         main_width = total_width - sidebar_width - gap
         left_width = main_width
         right_width = sidebar_width
         right_x = margin
         left_x = right_x + right_width + gap
     elif layout_style == "slate_profile":
-        sidebar_width = total_width * 0.36
+        sidebar_ratio = min(max(theme.get("sidebar_ratio", 0.37), 0.3), 0.44)
+        sidebar_width = total_width * sidebar_ratio
         main_width = total_width - sidebar_width - gap
         right_width = sidebar_width
         right_x = margin
         left_width = main_width
         left_x = right_x + right_width + gap
     else:
-        left_width = total_width * 0.62
+        left_width = total_width * main_ratio
         right_width = total_width - left_width - gap
         left_x = margin
         right_x = left_x + left_width + gap
@@ -379,127 +576,279 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
 
         if first_page:
             if layout_style == "slate_profile":
-                name_banner_height = 78
+                banner_width = total_width - 72
+                compact_name_leading = header_name_font_size + 4
+                compact_headline_leading = header_headline_font_size + 4
+                name_banner_height = max(
+                    78,
+                    _measure_wrapped_text_height(
+                        cv.get("full_name", ""),
+                        "Helvetica-Bold",
+                        header_name_font_size,
+                        banner_width,
+                        compact_name_leading,
+                    )
+                    + _measure_wrapped_text_height(
+                        cv.get("headline", ""),
+                        "Helvetica",
+                        header_headline_font_size,
+                        banner_width,
+                        compact_headline_leading,
+                    )
+                    + 32,
+                )
                 banner_bottom = top - name_banner_height
                 pdf.setFillColor(panel_primary)
                 safe_round_rect(pdf, margin - 6, banner_bottom - 10, total_width + 12, name_banner_height + 18, 8, fill=1, stroke=0)
                 pdf.setStrokeColor(panel_border)
                 pdf.setLineWidth(1)
                 safe_round_rect(pdf, margin - 6, banner_bottom - 10, total_width + 12, name_banner_height + 18, 8, fill=0, stroke=1)
-                pdf.setFillColor(text_color)
-                pdf.setFont("Helvetica-Bold", 26)
-                pdf.drawCentredString(width / 2, banner_bottom + name_banner_height - 22, pdf_safe_text(cv.get("full_name", "")))
-                pdf.setFont("Helvetica", 12)
-                pdf.drawCentredString(width / 2, banner_bottom + name_banner_height - 44, pdf_safe_text(cv.get("headline", "")))
+                text_y = banner_bottom + name_banner_height - 24
+                text_y = _draw_wrapped_lines(
+                    pdf,
+                    cv.get("full_name", ""),
+                    width / 2,
+                    text_y,
+                    banner_width,
+                    "Helvetica-Bold",
+                    header_name_font_size,
+                    compact_name_leading,
+                    fill_color=text_color,
+                    align="center",
+                )
+                _draw_wrapped_lines(
+                    pdf,
+                    cv.get("headline", ""),
+                    width / 2,
+                    text_y - 4,
+                    banner_width,
+                    "Helvetica",
+                    header_headline_font_size,
+                    compact_headline_leading,
+                    fill_color=text_color,
+                    align="center",
+                )
                 draw_columns(banner_bottom - 14)
                 start_y = banner_bottom - 30
                 return start_y, start_y
 
             if layout_style == "sidebar_skillset":
                 draw_columns(top)
+                compact_name_font_size = max(16, header_name_font_size - 7)
+                compact_headline_font_size = max(10, header_headline_font_size - 1)
+                compact_name_leading = compact_name_font_size + 3
+                compact_headline_leading = compact_headline_font_size + 3
+                box_inner_width = right_width - 40
+                box_content_height = _measure_wrapped_text_height(
+                    cv.get("full_name", ""),
+                    "Helvetica-Bold",
+                    compact_name_font_size,
+                    box_inner_width,
+                    compact_name_leading,
+                )
+                if str(cv.get("headline", "")).strip():
+                    box_content_height += 4 + _measure_wrapped_text_height(
+                        cv.get("headline", ""),
+                        "Helvetica",
+                        compact_headline_font_size,
+                        box_inner_width,
+                        compact_headline_leading,
+                    )
+                name_box_height = max(44, box_content_height + 18)
+                box_top = top - 12
+                box_bottom = box_top - name_box_height
                 pdf.setFillColor(hero_accent)
-                safe_round_rect(pdf, right_x + 8, top - 64, right_width - 16, 40, 8, fill=1, stroke=0)
-                pdf.setFillColor(hero_text_color)
-                pdf.setFont("Helvetica-Bold", 17)
-                pdf.drawString(right_x + 12, top - 20, pdf_safe_text(cv.get("full_name", "")))
-                pdf.setFont("Helvetica", 11)
-                pdf.drawString(right_x + 12, top - 40, pdf_safe_text(cv.get("headline", "")))
-                pdf.setFont("Helvetica-Bold", 8)
-                pdf.drawString(right_x + 12, top - 74, "LOCATION")
-                pdf.setFont("Helvetica", 10)
-                pdf.drawString(right_x + 12, top - 88, pdf_safe_text(cv.get("location", "")))
-                pdf.setFont("Helvetica-Bold", 8)
-                pdf.drawString(right_x + 12, top - 114, "PHONE")
-                pdf.setFont("Helvetica", 10)
-                pdf.drawString(right_x + 12, top - 128, pdf_safe_text(cv.get("phone", "")))
-                pdf.setFont("Helvetica-Bold", 8)
-                pdf.drawString(right_x + 12, top - 154, "EMAIL")
-                pdf.setFont("Helvetica", 10)
-                pdf.drawString(right_x + 12, top - 168, pdf_safe_text(cv.get("email", "")))
-                sidebar_y = top - 190
-                linkedin = cv.get("linkedin", "").strip()
-                github = cv.get("github", "").strip()
-                if linkedin:
-                    pdf.setFont("Helvetica-Bold", 8)
-                    pdf.drawString(right_x + 12, sidebar_y, "LINKEDIN")
-                    sidebar_y -= 12
-                    pdf.setFont("Helvetica", 8)
-                    pdf.drawString(right_x + 12, sidebar_y, pdf_safe_text(linkedin))
-                    sidebar_y -= 22
-                if github:
-                    pdf.setFont("Helvetica-Bold", 8)
-                    pdf.drawString(right_x + 12, sidebar_y, "GITHUB")
-                    sidebar_y -= 12
-                    pdf.setFont("Helvetica", 8)
-                    pdf.drawString(right_x + 12, sidebar_y, pdf_safe_text(github))
-                    sidebar_y -= 22
+                safe_round_rect(pdf, right_x + 8, box_bottom, right_width - 16, name_box_height, 8, fill=1, stroke=0)
+                text_y = box_top - 10
+                text_y = _draw_wrapped_lines(
+                    pdf,
+                    cv.get("full_name", ""),
+                    right_x + 12,
+                    text_y,
+                    box_inner_width,
+                    "Helvetica-Bold",
+                    compact_name_font_size,
+                    compact_name_leading,
+                    fill_color=hero_text_color,
+                )
+                _draw_wrapped_lines(
+                    pdf,
+                    cv.get("headline", ""),
+                    right_x + 12,
+                    text_y - 4,
+                    box_inner_width,
+                    "Helvetica",
+                    compact_headline_font_size,
+                    compact_headline_leading,
+                    fill_color=hero_text_color,
+                )
+                sidebar_y = box_bottom - 14
+                sidebar_y = _draw_contact_blocks(
+                    pdf,
+                    contact_fields,
+                    right_x + 12,
+                    sidebar_y,
+                    right_width - 24,
+                    header_contact_label_font_size,
+                    header_contact_font_size,
+                    header_contact_leading,
+                    sidebar_section_title_color,
+                    hero_text_color,
+                )
                 return top - 22, sidebar_y - 6
 
             if layout_style == "professional_header":
-                header_height = 128
-                header_bottom = top - header_height
-                pdf.setFillColor(hero_background)
-                safe_round_rect(pdf, left_x - 2, header_bottom, total_width + 4, header_height, 6, fill=1, stroke=0)
-                contact_box_height = 96
                 contact_box_width = right_width + 10
                 contact_box_x = right_x - 2
+                contact_inner_width = contact_box_width - 16
+                left_header_width = right_x - left_x - 22
+                name_leading = header_name_font_size + 4
+                headline_leading = header_headline_font_size + 4
+                left_content_height = _measure_wrapped_text_height(
+                    cv.get("full_name", ""),
+                    "Helvetica-Bold",
+                    header_name_font_size,
+                    left_header_width,
+                    name_leading,
+                )
+                if str(cv.get("headline", "")).strip():
+                    left_content_height += 6 + _measure_wrapped_text_height(
+                        cv.get("headline", ""),
+                        "Helvetica",
+                        header_headline_font_size,
+                        left_header_width,
+                        headline_leading,
+                    )
+                contact_box_height = max(
+                    96,
+                    _measure_contact_blocks_height(
+                        contact_fields,
+                        contact_inner_width,
+                        header_contact_label_font_size,
+                        header_contact_font_size,
+                        header_contact_leading,
+                    ) + 16,
+                )
+                header_height = max(header_min_height, max(left_content_height + 34, contact_box_height + 28))
+                header_bottom = top - header_height
                 contact_box_y = header_bottom + 14
+                pdf.setFillColor(hero_background)
+                safe_round_rect(pdf, left_x - 2, header_bottom, total_width + 4, header_height, 6, fill=1, stroke=0)
                 pdf.setFillColor(hero_accent)
                 safe_round_rect(pdf, contact_box_x, contact_box_y, contact_box_width, contact_box_height, 6, fill=1, stroke=0)
                 pdf.setStrokeColor(colors.HexColor("#7da0c4"))
                 pdf.setLineWidth(0.8)
                 safe_round_rect(pdf, contact_box_x, contact_box_y, contact_box_width, contact_box_height, 6, fill=0, stroke=1)
-                pdf.setFillColor(hero_text_color)
-                pdf.setFont("Helvetica-Bold", 24)
-                pdf.drawString(left_x + 10, header_bottom + header_height - 36, pdf_safe_text(cv.get("full_name", "")))
-                pdf.setFont("Helvetica-Bold", 12)
-                pdf.drawString(left_x + 10, header_bottom + header_height - 58, pdf_safe_text(cv.get("headline", "")))
-                pdf.setFont("Helvetica-Bold", 10)
-                pdf.drawString(contact_box_x + 8, contact_box_y + contact_box_height - 16, pdf_safe_text("Location:"))
-                pdf.setFont("Helvetica", 10)
-                pdf.drawString(contact_box_x + 56, contact_box_y + contact_box_height - 16, pdf_safe_text(cv.get("location", "")))
-                pdf.setFont("Helvetica-Bold", 10)
-                pdf.drawString(contact_box_x + 8, contact_box_y + contact_box_height - 32, pdf_safe_text("Phone:"))
-                pdf.setFont("Helvetica", 10)
-                pdf.drawString(contact_box_x + 48, contact_box_y + contact_box_height - 32, pdf_safe_text(cv.get("phone", "")))
-                pdf.setFont("Helvetica-Bold", 10)
-                pdf.drawString(contact_box_x + 8, contact_box_y + contact_box_height - 48, pdf_safe_text("Email:"))
-                pdf.setFont("Helvetica", 10)
-                pdf.drawString(contact_box_x + 46, contact_box_y + contact_box_height - 48, pdf_safe_text(cv.get("email", "")))
-                if cv.get("linkedin", "").strip():
-                    pdf.setFont("Helvetica-Bold", 10)
-                    pdf.drawString(contact_box_x + 8, contact_box_y + contact_box_height - 64, pdf_safe_text("LinkedIn:"))
-                    pdf.setFont("Helvetica", 8)
-                    pdf.drawString(contact_box_x + 58, contact_box_y + contact_box_height - 64, pdf_safe_text(cv.get("linkedin", "")))
-                if cv.get("github", "").strip():
-                    pdf.setFont("Helvetica-Bold", 10)
-                    pdf.drawString(contact_box_x + 8, contact_box_y + contact_box_height - 80, pdf_safe_text("GitHub:"))
-                    pdf.setFont("Helvetica", 8)
-                    pdf.drawString(contact_box_x + 50, contact_box_y + contact_box_height - 80, pdf_safe_text(cv.get("github", "")))
+                text_y = header_bottom + header_height - 22
+                text_y = _draw_wrapped_lines(
+                    pdf,
+                    cv.get("full_name", ""),
+                    left_x + 10,
+                    text_y,
+                    left_header_width,
+                    "Helvetica-Bold",
+                    header_name_font_size,
+                    name_leading,
+                    fill_color=hero_text_color,
+                )
+                _draw_wrapped_lines(
+                    pdf,
+                    cv.get("headline", ""),
+                    left_x + 10,
+                    text_y - 4,
+                    left_header_width,
+                    "Helvetica-Bold",
+                    header_headline_font_size,
+                    headline_leading,
+                    fill_color=hero_text_color,
+                )
+                _draw_contact_blocks(
+                    pdf,
+                    contact_fields,
+                    contact_box_x + 8,
+                    contact_box_y + contact_box_height - 12,
+                    contact_inner_width,
+                    header_contact_label_font_size,
+                    header_contact_font_size,
+                    header_contact_leading,
+                    hero_strip,
+                    hero_text_color,
+                )
                 draw_columns(header_bottom - 10)
                 pdf.setFillColor(text_color)
                 start_y = header_bottom - 26
                 return start_y, start_y
 
             # modern_header (default)
-            hero_height = 120
+            title_width = right_x - left_x - 22
+            name_leading = header_name_font_size + 4
+            headline_leading = header_headline_font_size + 4
+            title_content_height = _measure_wrapped_text_height(
+                cv.get("full_name", ""),
+                "Helvetica-Bold",
+                header_name_font_size,
+                title_width,
+                name_leading,
+            )
+            if str(cv.get("headline", "")).strip():
+                title_content_height += 6 + _measure_wrapped_text_height(
+                    cv.get("headline", ""),
+                    "Helvetica",
+                    header_headline_font_size,
+                    title_width,
+                    headline_leading,
+                )
+            contact_content_height = _measure_contact_blocks_height(
+                contact_fields,
+                right_width - 10,
+                header_contact_label_font_size,
+                header_contact_font_size,
+                header_contact_leading,
+            )
+            hero_height = max(header_min_height, max(title_content_height + 34, contact_content_height + 28))
             hero_top = top
             hero_bottom = hero_top - hero_height
             pdf.setFillColor(hero_background)
             safe_round_rect(pdf, left_x - 12, hero_bottom - 10, total_width + 24, hero_height + 20, 20, fill=1, stroke=0)
             pdf.setFillColor(hero_accent)
-            safe_round_rect(pdf, left_x + 6, hero_bottom + hero_height * 0.32, total_width * 0.58, hero_height * 0.48, 18, fill=1, stroke=0)
-            pdf.setFillColor(hero_text_color)
-            pdf.setFont("Helvetica-Bold", 24)
-            pdf.drawString(left_x + 12, hero_bottom + hero_height - 28, pdf_safe_text(cv.get("full_name", "")))
-            pdf.setFont("Helvetica", 11)
-            pdf.drawString(left_x + 12, hero_bottom + hero_height - 50, pdf_safe_text(cv.get("headline", "")))
-            pdf.setFont("Helvetica", 8)
-            pdf.drawString(right_x + 6, hero_bottom + hero_height - 26, pdf_safe_text(f"Location: {cv.get('location', '')}"))
-            pdf.drawString(right_x + 6, hero_bottom + hero_height - 38, pdf_safe_text(f"Phone: {cv.get('phone', '')}"))
-            pdf.drawString(right_x + 6, hero_bottom + hero_height - 50, pdf_safe_text(f"Email: {cv.get('email', '')}"))
-            pdf.drawString(right_x + 6, hero_bottom + hero_height - 62, pdf_safe_text(f"LinkedIn: {cv.get('linkedin', '')}"))
-            pdf.drawString(right_x + 6, hero_bottom + hero_height - 74, pdf_safe_text(f"GitHub: {cv.get('github', '')}"))
+            accent_height = min(max(title_content_height + 18, 42), hero_height * 0.52)
+            accent_y = hero_bottom + ((hero_height - accent_height) / 2)
+            safe_round_rect(pdf, left_x + 6, accent_y, min(total_width * 0.58, title_width + 20), accent_height, 18, fill=1, stroke=0)
+            text_y = hero_bottom + hero_height - 22
+            text_y = _draw_wrapped_lines(
+                pdf,
+                cv.get("full_name", ""),
+                left_x + 12,
+                text_y,
+                title_width,
+                "Helvetica-Bold",
+                header_name_font_size,
+                name_leading,
+                fill_color=hero_text_color,
+            )
+            _draw_wrapped_lines(
+                pdf,
+                cv.get("headline", ""),
+                left_x + 12,
+                text_y - 4,
+                title_width,
+                "Helvetica",
+                header_headline_font_size,
+                headline_leading,
+                fill_color=hero_text_color,
+            )
+            _draw_contact_blocks(
+                pdf,
+                contact_fields,
+                right_x + 6,
+                hero_bottom + hero_height - 18,
+                right_width - 10,
+                header_contact_label_font_size,
+                header_contact_font_size,
+                header_contact_leading,
+                hero_strip,
+                hero_text_color,
+            )
             draw_columns(hero_bottom)
             pdf.setFillColor(text_color)
             return hero_bottom - 16, hero_bottom - 24
@@ -509,12 +858,30 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
         ribbon_bottom = top - ribbon_height
         if layout_style == "sidebar_skillset":
             draw_columns(top)
-            pdf.setFillColor(hero_text_color)
-            pdf.setFont("Helvetica-Bold", 10)
-            pdf.drawString(right_x + 12, top - 18, pdf_safe_text(cv.get("full_name", "")))
-            pdf.setFont("Helvetica", 8)
-            pdf.drawString(right_x + 12, top - 32, pdf_safe_text(cv.get("headline", "")))
-            return top - 18, top - 52
+            compact_y = top - 18
+            compact_y = _draw_wrapped_lines(
+                pdf,
+                cv.get("full_name", ""),
+                right_x + 12,
+                compact_y,
+                right_width - 24,
+                "Helvetica-Bold",
+                10,
+                12,
+                fill_color=hero_text_color,
+            )
+            compact_y = _draw_wrapped_lines(
+                pdf,
+                cv.get("headline", ""),
+                right_x + 12,
+                compact_y,
+                right_width - 24,
+                "Helvetica",
+                8,
+                10,
+                fill_color=hero_text_color,
+            )
+            return top - 18, compact_y - 8
 
         if layout_style == "slate_profile":
             draw_columns(top - 8)

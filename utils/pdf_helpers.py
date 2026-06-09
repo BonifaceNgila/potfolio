@@ -120,13 +120,35 @@ def pdf_safe_text(value: str) -> str:
 def wrap_pdf_text(text: str, font_name: str, font_size: int, max_width: float) -> list[str]:
     if not REPORTLAB_AVAILABLE:
         return [pdf_safe_text(text)]
-    words = pdf_safe_text(text).split()
+    safe_text = pdf_safe_text(text)
+    words = safe_text.split()
     if not words:
         return []
 
+    def split_long_word(word: str) -> list[str]:
+        if pdfmetrics.stringWidth(word, font_name, font_size) <= max_width:
+            return [word]
+
+        chunks: list[str] = []
+        current = ""
+        for char in word:
+            candidate = f"{current}{char}"
+            if current and pdfmetrics.stringWidth(candidate, font_name, font_size) > max_width:
+                chunks.append(current)
+                current = char
+            else:
+                current = candidate
+        if current:
+            chunks.append(current)
+        return chunks or [word]
+
     lines: list[str] = []
-    current = words[0]
-    for word in words[1:]:
+    expanded_words: list[str] = []
+    for word in words:
+        expanded_words.extend(split_long_word(word))
+
+    current = expanded_words[0]
+    for word in expanded_words[1:]:
         candidate = f"{current} {word}"
         if pdfmetrics.stringWidth(candidate, font_name, font_size) <= max_width:
             current = candidate

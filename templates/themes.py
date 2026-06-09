@@ -44,6 +44,13 @@ if REPORTLAB_AVAILABLE:
         "hero_text": colors.white,
         "panel_border": colors.HexColor("#d6e3f2"),
         "layout": "professional_header",
+        "main_ratio": 0.62,
+        "header_min_height": 132,
+        "header_name_font_size": 24,
+        "header_headline_font_size": 12,
+        "header_contact_label_font_size": 8,
+        "header_contact_font_size": 9,
+        "header_contact_leading": 11,
     }
 
     PDF_BASE_ONE_COLUMN_THEME = {
@@ -55,6 +62,13 @@ if REPORTLAB_AVAILABLE:
         "panel_secondary": colors.HexColor("#f1f5f9"),
         "text_color": colors.HexColor("#0f172a"),
         "hero_text": colors.HexColor("#0f172a"),
+        "header_min_height": 126,
+        "header_name_font_size": 22,
+        "header_headline_font_size": 12,
+        "header_contact_label_font_size": 8,
+        "header_contact_font_size": 9,
+        "header_contact_leading": 11,
+        "header_meta_ratio": 0.34,
     }
 
     PDF_TEMPLATE_THEMES = {
@@ -92,6 +106,7 @@ if REPORTLAB_AVAILABLE:
                 "hero_text": colors.HexColor("#f8fafc"),
                 "panel_border": colors.HexColor("#dbe5f0"),
                 "layout": "sidebar_skillset",
+                "sidebar_ratio": 0.36,
                 "sidebar_text_color": colors.HexColor("#e2e8f0"),
                 "sidebar_section_title_color": colors.HexColor("#bfdbfe"),
                 "sidebar_section_line_color": colors.HexColor("#334155"),
@@ -125,6 +140,7 @@ if REPORTLAB_AVAILABLE:
                 "hero_text": colors.HexColor("#f8fafc"),
                 "panel_border": colors.HexColor("#d6e3f2"),
                 "layout": "slate_profile",
+                "sidebar_ratio": 0.37,
                 "sidebar_background": colors.HexColor("#f1f3f5"),
                 "sidebar_border": colors.HexColor("#d6d8dc"),
                 "sidebar_text_color": colors.HexColor("#1f2937"),
@@ -154,6 +170,11 @@ if REPORTLAB_AVAILABLE:
                 "hero_accent": colors.HexColor("#93c5fd"),
                 "hero_text": colors.HexColor("#0f172a"),
                 "text_color": colors.HexColor("#0f172a"),
+                "header_min_height": 156,
+                "header_name_font_size": 30,
+                "header_headline_font_size": 17,
+                "header_contact_font_size": 11,
+                "header_contact_leading": 14,
                 "layout": "minimal_clean",
             },
         ),
@@ -172,6 +193,7 @@ if REPORTLAB_AVAILABLE:
                 "link_color": colors.HexColor("#c9a84c"),
                 "section_title_color": colors.HexColor("#1b1b1b"),
                 "section_line_color": colors.HexColor("#c9a84c"),
+                "header_min_height": 138,
                 "layout": "classic_hero",
             },
         ),
