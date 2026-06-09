@@ -1,4 +1,8 @@
+import os
+import sys
+
 import streamlit as st
+from streamlit.runtime.scriptrunner import get_script_run_ctx
 
 from db import init_db
 from db.cv_versions import fetch_default_version
@@ -6,6 +10,20 @@ from templates.themes import DISPLAY_TEMPLATE_OPTIONS, validate_template_mapping
 from views.public_view import render_portfolio_landing, render_cv_streamlit, download_section
 from views.editor import render_editor_login, render_editor_page
 from views.cover_letter_page import render_cover_letter_formatter
+
+
+def _run_with_streamlit_if_needed() -> None:
+    if get_script_run_ctx(suppress_warning=True) is not None:
+        return
+
+    from streamlit.web import cli as stcli
+
+    sys.argv = ["streamlit", "run", os.path.abspath(__file__), *sys.argv[1:]]
+    sys.exit(stcli.main())
+
+
+if __name__ == "__main__":
+    _run_with_streamlit_if_needed()
 
 
 st.set_page_config(page_title="CV Portfolio Manager", page_icon="\U0001f4bc", layout="wide")
