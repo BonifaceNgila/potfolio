@@ -123,11 +123,17 @@ def render_portfolio_landing(cv: dict) -> None:
     project_html = ""
     for item in projects[:4]:
         tech = _e(item.get("technologies", ""))
+        link = _e(item.get("link", ""))
+        link_html = (
+            f"<a class='project-link' href='{link}' target='_blank' rel='noreferrer'>View Repository</a>"
+            if link else ""
+        )
         project_html += f"""
         <article class='project-card'>
             <h3>{_e(item.get("name", ""))}</h3>
             <p>{_e(item.get("description", ""))}</p>
             <span>{tech}</span>
+            {link_html}
         </article>
         """
 
@@ -159,13 +165,53 @@ def render_portfolio_landing(cv: dict) -> None:
         }}
         .pf-wrap {{
             font-family: Inter, 'Segoe UI', Arial, sans-serif;
-            background: #f7f8fb;
+            background:
+                linear-gradient(180deg, #081116 0%, #0d1b22 34%, #f5f8fb 34%, #f5f8fb 100%);
             color: #17202a;
             line-height: 1.55;
         }}
         .pf-wrap a {{
             color: inherit;
             text-decoration: none;
+        }}
+        .site-nav {{
+            min-height: 70px;
+            padding: 0 34px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+            background: rgba(8, 17, 22, 0.94);
+            color: #e9fbf8;
+            border-bottom: 1px solid rgba(85, 230, 208, 0.22);
+        }}
+        .brand {{
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 900;
+        }}
+        .brand-mark {{
+            width: 38px;
+            height: 38px;
+            display: grid;
+            place-items: center;
+            border: 1px solid rgba(85, 230, 208, 0.6);
+            border-radius: 8px;
+            color: #55e6d0;
+            background: rgba(85, 230, 208, 0.08);
+            box-shadow: 0 0 26px rgba(85, 230, 208, 0.18);
+        }}
+        .nav-links {{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px;
+            color: #aac2ca;
+            font-size: 14px;
+            font-weight: 750;
+        }}
+        .nav-links a:hover {{
+            color: #55e6d0;
         }}
         .pf-hero {{
             min-height: 660px;
@@ -182,6 +228,7 @@ def render_portfolio_landing(cv: dict) -> None:
             background-position: center;
             border-radius: 8px;
             overflow: hidden;
+            border-bottom: 1px solid rgba(85, 230, 208, 0.18);
         }}
         .eyebrow {{
             margin: 0 0 14px;
@@ -230,8 +277,8 @@ def render_portfolio_landing(cv: dict) -> None:
             font-weight: 800;
         }}
         .pf-button.primary {{
-            background: #22b8a0;
-            border-color: #22b8a0;
+            background: #55e6d0;
+            border-color: #55e6d0;
             color: #07141a;
         }}
         .contact-panel {{
@@ -271,25 +318,26 @@ def render_portfolio_landing(cv: dict) -> None:
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 1px;
-            background: #dbe3ea;
+            background: #18313b;
             border-radius: 8px;
             overflow: hidden;
-            margin-top: 18px;
+            margin: 18px 28px 0;
+            border: 1px solid rgba(85, 230, 208, 0.18);
         }}
         .stat {{
             min-height: 112px;
             padding: 20px;
-            background: #ffffff;
+            background: #0d1b22;
         }}
         .stat strong {{
             display: block;
-            color: #0b5964;
+            color: #55e6d0;
             font-size: 30px;
             line-height: 1;
             margin-bottom: 8px;
         }}
         .stat span {{
-            color: #536271;
+            color: #c1d1d7;
             font-size: 14px;
         }}
         .section {{
@@ -297,6 +345,17 @@ def render_portfolio_landing(cv: dict) -> None:
         }}
         .section.alt {{
             background: #ffffff;
+        }}
+        .section.tech-band {{
+            background: #0d1b22;
+        }}
+        .section.tech-band .section-head h2,
+        .section.tech-band .role-card h3 {{
+            color: #ffffff;
+        }}
+        .section.tech-band .section-head p,
+        .section.tech-band .role-card p {{
+            color: #bfd0d6;
         }}
         .section-head {{
             display: flex;
@@ -327,6 +386,10 @@ def render_portfolio_landing(cv: dict) -> None:
             background: #ffffff;
             padding: 18px;
         }}
+        .role-card {{
+            border-color: rgba(85, 230, 208, 0.22);
+            background: linear-gradient(180deg, rgba(85, 230, 208, 0.09), rgba(255, 255, 255, 0.04));
+        }}
         .role-card h3, .project-card h3, .proof-item h3 {{
             margin: 0 0 10px;
             font-size: 18px;
@@ -353,7 +416,7 @@ def render_portfolio_landing(cv: dict) -> None:
             padding: 20px;
             background: #ffffff;
             border: 1px solid #dce4eb;
-            border-left: 5px solid #22b8a0;
+            border-left: 5px solid #55e6d0;
             border-radius: 8px;
         }}
         .timeline-item span, .project-card span, .proof-item span {{
@@ -380,8 +443,11 @@ def render_portfolio_landing(cv: dict) -> None:
         .skills-panel {{
             padding: 22px;
             border-radius: 8px;
-            background: #101820;
+            background:
+                linear-gradient(180deg, rgba(85, 230, 208, 0.1), rgba(85, 230, 208, 0)),
+                #101820;
             color: #ffffff;
+            border: 1px solid rgba(85, 230, 208, 0.24);
         }}
         .skills-panel h3 {{
             margin: 0 0 14px;
@@ -398,6 +464,17 @@ def render_portfolio_landing(cv: dict) -> None:
         }}
         .project-card {{
             background: #f7f8fb;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }}
+        .project-link {{
+            align-self: flex-start;
+            margin-top: auto;
+            color: #0b5964;
+            font-size: 13px;
+            font-weight: 850;
+            border-bottom: 2px solid #55e6d0;
         }}
         .proof-wrap {{
             display: grid;
@@ -424,8 +501,11 @@ def render_portfolio_landing(cv: dict) -> None:
             gap: 18px;
             align-items: center;
             color: #ffffff;
-            background: #0f2f35;
+            background:
+                linear-gradient(120deg, rgba(85, 230, 208, 0.12), rgba(244, 179, 93, 0.08)),
+                #0f2f35;
             border-radius: 8px;
+            border: 1px solid rgba(85, 230, 208, 0.2);
         }}
         .closing-band h2 {{
             margin: 0 0 6px;
@@ -479,6 +559,19 @@ def render_portfolio_landing(cv: dict) -> None:
         }}
     </style>
     <div class='pf-wrap'>
+        <nav class='site-nav'>
+            <a class='brand' href='#top'>
+                <span class='brand-mark'>BN</span>
+                <span>Boniface Ngila</span>
+            </a>
+            <div class='nav-links'>
+                <a href='#roles'>Roles</a>
+                <a href='#experience'>Experience</a>
+                <a href='#projects'>Projects</a>
+                <a href='#proof'>Proof</a>
+                <a href='mailto:{email_val}'>Contact</a>
+            </div>
+        </nav>
         <div class='pf-hero'>
             <div>
                 <p class='eyebrow'>Portfolio for IT, IAM, Cloud, Security, and Service Delivery Roles</p>
@@ -506,7 +599,7 @@ def render_portfolio_landing(cv: dict) -> None:
 
         <div class='stats-band'>{stats_html}</div>
 
-        <section class='section'>
+        <section class='section tech-band' id='roles'>
             <div class='section-head'>
                 <h2>Role Fit</h2>
                 <p>Positioning drawn from your CV, academic path, certifications, projects, and progressive IT support experience.</p>
@@ -514,7 +607,7 @@ def render_portfolio_landing(cv: dict) -> None:
             <div class='roles-grid'>{role_cards_html}</div>
         </section>
 
-        <section class='section alt'>
+        <section class='section alt' id='experience'>
             <div class='section-head'>
                 <h2>Experience Evidence</h2>
                 <p>Recent roles show delivery across infrastructure operations, access management, user support, governance, and service improvement.</p>
@@ -528,7 +621,7 @@ def render_portfolio_landing(cv: dict) -> None:
             </div>
         </section>
 
-        <section class='section'>
+        <section class='section' id='projects'>
             <div class='section-head'>
                 <h2>Projects</h2>
                 <p>Practical builds and operational tools that show capacity to automate, report, document, and deliver usable systems.</p>
@@ -536,7 +629,7 @@ def render_portfolio_landing(cv: dict) -> None:
             <div class='projects-grid'>{project_html}</div>
         </section>
 
-        <section class='section alt'>
+        <section class='section alt' id='proof'>
             <div class='section-head'>
                 <h2>Academic & Professional Proof</h2>
                 <p>Formal education and certifications supporting technical breadth, security awareness, cloud capability, and ongoing growth.</p>
