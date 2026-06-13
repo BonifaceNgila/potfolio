@@ -71,16 +71,16 @@ def render_portfolio_landing(cv: dict) -> None:
             "Identity lifecycle, SSO, MFA, Active Directory, Entra ID concepts, OKTA, OCI IAM, access troubleshooting.",
         ),
         (
-            "IT Operations Leadership",
-            "Infrastructure availability, endpoint support, incident queues, documentation, onboarding, and user enablement.",
+            "Full-Stack Web Development",
+            "PHP/MySQL systems, Python and JavaScript tooling, dashboards, role-based workflows, and practical data management platforms.",
         ),
         (
-            "Cloud & DevOps Support",
-            "Microsoft 365, Oracle Cloud, AWS exposure, PowerShell/Bash/Python automation, reporting, and operational improvement.",
+            "Cloud Architecture & DevOps",
+            "Oracle Cloud, AWS exposure, Kubernetes foundations, CI/CD awareness, infrastructure optimization, and automation.",
         ),
         (
-            "Security & Compliance",
-            "Endpoint security, secure authentication, policy adherence, disaster recovery awareness, and data protection training.",
+            "AI-Enabled Engineering",
+            "Local LLM integrations, FastAPI and Streamlit tools, AI-assisted code review, image captioning, and sentiment analysis.",
         ),
     ]
     role_cards_html = "".join(
@@ -121,7 +121,7 @@ def render_portfolio_landing(cv: dict) -> None:
         """
 
     project_html = ""
-    for item in projects[:4]:
+    for item in projects:
         tech = _e(item.get("technologies", ""))
         link = _e(item.get("link", ""))
         link_html = (
