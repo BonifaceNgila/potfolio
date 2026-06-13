@@ -52,6 +52,72 @@ def _ensure_column(cur: sqlite3.Cursor, table: str, column: str, definition: str
         cur.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
 
 
+def _master_timeline(cv_data: dict) -> str:
+    for item in cv_data.get("education", []):
+        if item.get("course") == "Master of Science in Computer Science":
+            return str(item.get("timeline", "")).strip()
+    return ""
+
+
+def _project_names(cv_data: dict) -> set[str]:
+    names: set[str] = set()
+    for item in cv_data.get("projects", []):
+        if isinstance(item, dict):
+            name = item.get("name", "")
+        else:
+            name = str(item)
+        if str(name).strip():
+            names.add(str(name).strip())
+    return names
+
+
+def _default_cv_is_stale(current_cv: dict, seed_cv: dict) -> bool:
+    current_project_names = _project_names(current_cv)
+    seed_project_names = _project_names(seed_cv)
+    return any(
+        [
+            current_cv.get("headline") != seed_cv.get("headline"),
+            current_cv.get("linkedin") != seed_cv.get("linkedin"),
+            _master_timeline(current_cv) != _master_timeline(seed_cv),
+            not seed_project_names.issubset(current_project_names),
+            "IT Onboarding Automation" in current_project_names,
+            "Service Desk Reporting Dashboard" in current_project_names,
+        ]
+    )
+
+
+def _sync_default_profile_from_local_seed(cur: sqlite3.Cursor, now: str) -> None:
+    seed_cv = default_cv_data()
+    cur.execute(
+        """
+        SELECT v.id, v.cv_json
+        FROM cv_versions v
+        JOIN profiles p ON p.id = v.profile_id
+        WHERE p.is_default = 1
+        ORDER BY datetime(v.updated_at) DESC, v.id DESC
+        LIMIT 1
+        """
+    )
+    row = cur.fetchone()
+    if not row:
+        return
+
+    try:
+        current_cv = json.loads(row[1])
+    except (TypeError, json.JSONDecodeError):
+        current_cv = {}
+
+    if _default_cv_is_stale(current_cv, seed_cv):
+        cur.execute(
+            """
+            UPDATE cv_versions
+            SET cv_json = ?, updated_at = ?
+            WHERE id = ?
+            """,
+            (json.dumps(seed_cv, ensure_ascii=False), now, row[0]),
+        )
+
+
 def init_db() -> None:
     with get_db() as conn:
         cur = conn.cursor()
@@ -126,4 +192,5 @@ def init_db() -> None:
                 (profile_id, "Default v1", json.dumps(default_cv_data()), now, now),
             )
 
+        _sync_default_profile_from_local_seed(cur, now)
         conn.commit()
