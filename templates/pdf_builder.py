@@ -1099,7 +1099,7 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
 # ---------------------------------------------------------------------------
 
 def _add_title_op(ops: list[dict], title: str) -> None:
-    ops.append({"kind": "title", "title": title, "height": 16})
+    ops.append({"kind": "title", "title": title, "height": 32})
 
 
 def _add_gap_op(ops: list[dict], gap_size: int) -> None:

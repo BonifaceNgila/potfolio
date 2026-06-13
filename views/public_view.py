@@ -602,7 +602,6 @@ def render_portfolio_landing(cv: dict) -> None:
         <section class='section tech-band' id='roles'>
             <div class='section-head'>
                 <h2>Role Fit</h2>
-                <p>Positioning drawn from your CV, academic path, certifications, projects, and progressive IT support experience.</p>
             </div>
             <div class='roles-grid'>{role_cards_html}</div>
         </section>
@@ -610,7 +609,6 @@ def render_portfolio_landing(cv: dict) -> None:
         <section class='section alt' id='experience'>
             <div class='section-head'>
                 <h2>Experience Evidence</h2>
-                <p>Recent roles show delivery across infrastructure operations, access management, user support, governance, and service improvement.</p>
             </div>
             <div class='evidence-grid'>
                 <div class='timeline'>{experience_html}</div>

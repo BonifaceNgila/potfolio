@@ -1,7 +1,6 @@
 import html
 
 from utils.html_helpers import html_list, html_experience, html_education, html_projects, html_referees, section_header
-from utils.converters import normalize_education_record
 
 
 def build_html(cv: dict, template: str) -> str:
@@ -78,21 +77,21 @@ def build_html(cv: dict, template: str) -> str:
     .summary { text-align: justify; text-justify: inter-word; }
     """
 
-    one_column_css = _one_column_classic_css() + shared_section_styles
-    one_column_minimal_css = _one_column_minimal_css() + shared_section_styles
-    one_column_executive_css = _one_column_executive_css() + shared_section_styles
-    two_column_css = _two_column_professional_css() + shared_section_styles
-    two_column_sidebar_css = _two_column_sidebar_css() + shared_section_styles
-    two_column_sidebar_skillset_css = _two_column_sidebar_skillset_css() + shared_section_styles
-    two_column_accent_css = _two_column_accent_css() + shared_section_styles
-    two_column_slate_css = _two_column_slate_css() + shared_section_styles
-    two_column_emerald_css = _two_column_emerald_css() + shared_section_styles
-    two_column_burgundy_css = _two_column_burgundy_css() + shared_section_styles
+    one_column_css = _one_column_classic_css() + shared_section_styles + _export_safety_css()
+    one_column_minimal_css = _one_column_minimal_css() + shared_section_styles + _export_safety_css()
+    one_column_executive_css = _one_column_executive_css() + shared_section_styles + _export_safety_css()
+    two_column_css = _two_column_professional_css() + shared_section_styles + _export_safety_css()
+    two_column_sidebar_css = _two_column_sidebar_css() + shared_section_styles + _export_safety_css()
+    two_column_sidebar_skillset_css = _two_column_sidebar_skillset_css() + shared_section_styles + _export_safety_css()
+    two_column_accent_css = _two_column_accent_css() + shared_section_styles + _export_safety_css()
+    two_column_slate_css = _two_column_slate_css() + shared_section_styles + _export_safety_css()
+    two_column_emerald_css = _two_column_emerald_css() + shared_section_styles + _export_safety_css()
+    two_column_burgundy_css = _two_column_burgundy_css() + shared_section_styles + _export_safety_css()
 
     if template == "One Column - Minimal":
         return f"""
-        <html><head><meta charset='UTF-8'><style>{one_column_minimal_css}</style></head>
-        <body>
+        <!doctype html><html><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1'><style>{one_column_minimal_css}</style></head>
+        <body data-template='one-column'>
             <div class='cv'>
                 <h1>{name}</h1>
                 <p>{headline}</p>
@@ -106,8 +105,8 @@ def build_html(cv: dict, template: str) -> str:
 
     if template == "Two Column - Professional":
         return f"""
-        <html><head><meta charset='UTF-8'><style>{two_column_css}</style></head>
-        <body>
+        <!doctype html><html><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1'><style>{two_column_css}</style></head>
+        <body data-template='two-column'>
             <div class='cv'>
                 <div class='header'>
                     <div class='header-grid'>
@@ -131,8 +130,8 @@ def build_html(cv: dict, template: str) -> str:
 
     if template == "Two Column - Sidebar":
         return f"""
-        <html><head><meta charset='UTF-8'><style>{two_column_sidebar_css}</style></head>
-        <body>
+        <!doctype html><html><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1'><style>{two_column_sidebar_css}</style></head>
+        <body data-template='two-column'>
             <div class='cv'>
                 <aside class='sidebar'>
                     <h1>{name}</h1>
@@ -157,8 +156,8 @@ def build_html(cv: dict, template: str) -> str:
         </div>
         """
         return f"""
-        <html><head><meta charset='UTF-8'><style>{two_column_sidebar_skillset_css}</style></head>
-        <body>
+        <!doctype html><html><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1'><style>{two_column_sidebar_skillset_css}</style></head>
+        <body data-template='two-column'>
             <div class='cv'>
                 <aside class='sidebar'>
                     <h1>{name}</h1>
@@ -195,8 +194,8 @@ def build_html(cv: dict, template: str) -> str:
 
     if template == "Two Column - Accent Panel":
         return f"""
-        <html><head><meta charset='UTF-8'><style>{two_column_accent_css}</style></head>
-        <body>
+        <!doctype html><html><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1'><style>{two_column_accent_css}</style></head>
+        <body data-template='two-column'>
             <div class='cv'>
                 <div class='hero'>
                     <div>
@@ -281,8 +280,8 @@ def build_html(cv: dict, template: str) -> str:
         )
 
         return f"""
-        <html><head><meta charset='UTF-8'><style>{two_column_slate_css}</style></head>
-        <body>
+        <!doctype html><html><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1'><style>{two_column_slate_css}</style></head>
+        <body data-template='two-column'>
             <div class='cv'>
                 <div class='name-banner'>
                     <h1>{name}</h1>
@@ -322,8 +321,8 @@ def build_html(cv: dict, template: str) -> str:
 
     if template == "One Column - Executive":
         return f"""
-        <html><head><meta charset='UTF-8'><style>{one_column_executive_css}</style></head>
-        <body>
+        <!doctype html><html><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1'><style>{one_column_executive_css}</style></head>
+        <body data-template='one-column'>
             <div class='cv'>
                 <div class='hero'>
                     <h1>{name}</h1>
@@ -343,8 +342,8 @@ def build_html(cv: dict, template: str) -> str:
 
     if template == "Two Column - Emerald":
         return f"""
-        <html><head><meta charset='UTF-8'><style>{two_column_emerald_css}</style></head>
-        <body>
+        <!doctype html><html><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1'><style>{two_column_emerald_css}</style></head>
+        <body data-template='two-column'>
             <div class='cv'>
                 <div class='header'>
                     <div class='header-grid'>
@@ -368,8 +367,8 @@ def build_html(cv: dict, template: str) -> str:
 
     if template == "Two Column - Burgundy":
         return f"""
-        <html><head><meta charset='UTF-8'><style>{two_column_burgundy_css}</style></head>
-        <body>
+        <!doctype html><html><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1'><style>{two_column_burgundy_css}</style></head>
+        <body data-template='two-column'>
             <div class='cv'>
                 <div class='hero'>
                     <div>
@@ -397,8 +396,8 @@ def build_html(cv: dict, template: str) -> str:
 
     # Default: One Column - Classic
     return f"""
-    <html><head><meta charset='UTF-8'><style>{one_column_css}</style></head>
-    <body>
+    <!doctype html><html><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1'><style>{one_column_css}</style></head>
+    <body data-template='one-column'>
         <div class='cv'>
             <div class='hero'>
                 <h1>{name}</h1>
@@ -420,6 +419,103 @@ def build_html(cv: dict, template: str) -> str:
 # ---------------------------------------------------------------------------
 # CSS template functions
 # ---------------------------------------------------------------------------
+
+def _export_safety_css() -> str:
+    return """
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+    body { overflow-wrap: break-word; word-break: normal; }
+    .cv {
+        width: min(100%, 1100px);
+    }
+    .job, .project-entry, .education-entry, .referee, .section-block,
+    .main-panel, .side-panel, .aside-panel, .sidebar-section, .section-body {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+    .section-heading, h1, h2, h3, h4 {
+        break-after: avoid;
+        page-break-after: avoid;
+        overflow-wrap: anywhere;
+    }
+    p, li, a, span, .detail-value, .project-tech, .experience-org,
+    .experience-period, .referee-field {
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+    img, svg {
+        max-width: 100%;
+    }
+    .grid, .main, .layout, .content, .header-grid {
+        min-width: 0;
+    }
+    .main-panel, .side-panel, .aside-panel, .content, .sidebar,
+    .main-area, .header-main, .header-contact {
+        min-width: 0;
+    }
+    @page {
+        size: A4;
+        margin: 12mm;
+    }
+    @media print {
+        html, body {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #ffffff !important;
+        }
+        body {
+            color-adjust: exact;
+            print-color-adjust: exact;
+            -webkit-print-color-adjust: exact;
+        }
+        .cv {
+            width: 186mm !important;
+            max-width: 186mm !important;
+            margin: 0 auto !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
+        }
+        body[data-template='two-column'] .grid,
+        body[data-template='two-column'] .main,
+        body[data-template='two-column'] .layout,
+        body[data-template='two-column'] .header-grid {
+            display: grid !important;
+        }
+        body[data-template='two-column'] .grid,
+        body[data-template='two-column'] .main {
+            grid-template-columns: minmax(0, 1.65fr) minmax(0, 0.95fr) !important;
+            gap: 8mm !important;
+        }
+        body[data-template='two-column'] .layout {
+            grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.55fr) !important;
+        }
+        body[data-template='two-column'] .header-grid {
+            grid-template-columns: minmax(0, 1.65fr) minmax(0, 0.95fr) !important;
+        }
+        .hero, .header, .name-banner, .sidebar, .content,
+        .main, .layout, .grid, .section-block, .main-panel,
+        .side-panel, .aside-panel, .main-area {
+            break-inside: auto;
+            page-break-inside: auto;
+        }
+        .job, .project-entry, .education-entry, .referee {
+            margin-bottom: 8px !important;
+        }
+        a {
+            text-decoration: none;
+        }
+    }
+    @media screen and (max-width: 760px) {
+        .cv {
+            width: 100%;
+            margin-left: 0;
+            margin-right: 0;
+        }
+    }
+    """
+
 
 def _one_column_classic_css() -> str:
     return """
