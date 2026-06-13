@@ -90,6 +90,7 @@ def _default_cv_is_stale(current_cv: dict, seed_cv: dict) -> bool:
     return any(
         [
             current_cv.get("headline") != seed_cv.get("headline"),
+            current_cv.get("location") != seed_cv.get("location"),
             current_cv.get("linkedin") != seed_cv.get("linkedin"),
             _master_timeline(current_cv) != _master_timeline(seed_cv),
             not seed_project_names.issubset(current_project_names),

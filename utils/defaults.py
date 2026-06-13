@@ -2,7 +2,7 @@ def default_cv_data() -> dict:
     return {
         "full_name": "BONIFACE MUTISYA NGILA",
         "headline": "IT Support Specialist | Web developer | Cloud Architect",
-        "location": "Kilifi, Kenya",
+        "location": "Mombasa, Kenya",
         "phone": "+254792950816",
         "email": "mutisyaboniface@outlook.com",
         "linkedin": "https://www.linkedin.com/in/bonifacengila254/",
