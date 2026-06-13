@@ -71,15 +71,32 @@ def _project_names(cv_data: dict) -> set[str]:
     return names
 
 
+def _project_links_by_name(cv_data: dict) -> dict[str, str]:
+    links: dict[str, str] = {}
+    for item in cv_data.get("projects", []):
+        if not isinstance(item, dict):
+            continue
+        name = str(item.get("name", "")).strip()
+        if name:
+            links[name] = str(item.get("link", "")).strip()
+    return links
+
+
 def _default_cv_is_stale(current_cv: dict, seed_cv: dict) -> bool:
     current_project_names = _project_names(current_cv)
     seed_project_names = _project_names(seed_cv)
+    current_project_links = _project_links_by_name(current_cv)
+    seed_project_links = _project_links_by_name(seed_cv)
     return any(
         [
             current_cv.get("headline") != seed_cv.get("headline"),
             current_cv.get("linkedin") != seed_cv.get("linkedin"),
             _master_timeline(current_cv) != _master_timeline(seed_cv),
             not seed_project_names.issubset(current_project_names),
+            any(
+                current_project_links.get(name, "") != link
+                for name, link in seed_project_links.items()
+            ),
             "IT Onboarding Automation" in current_project_names,
             "Service Desk Reporting Dashboard" in current_project_names,
         ]
