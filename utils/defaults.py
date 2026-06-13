@@ -133,7 +133,7 @@ def default_cv_data() -> dict:
                 "name": "Sentiment Analyzer (Mistral)",
                 "description": "AI application that uses a locally hosted Mistral model through Ollama to classify text sentiment as positive, negative, or neutral.",
                 "technologies": "Mistral, FastAPI, Streamlit, Ollama",
-                "link": "",
+                "link": "https://github.com/BonifaceNgila/sentiment-analyzer-mistral",
             },
         ],
         "languages": ["English (Fluent)", "Swahili (Native)"],
