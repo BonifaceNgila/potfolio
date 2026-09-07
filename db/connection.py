@@ -105,7 +105,7 @@ def _default_cv_is_stale(current_cv: dict, seed_cv: dict) -> bool:
 
 
 def _sync_default_profile_from_local_seed(cur: sqlite3.Cursor, now: str) -> None:
-    cur.execute("SELECT 1 FROM cv_versions WHERE version_name = ? LIMIT 1", ("Portfolio link refresh - September 2026",))
+    cur.execute("SELECT 1 FROM cv_versions WHERE version_name = ? LIMIT 1", ("Referees refresh - September 2026",))
     if cur.fetchone():
         return
     seed_cv = default_cv_data()
@@ -134,7 +134,7 @@ def _sync_default_profile_from_local_seed(cur: sqlite3.Cursor, now: str) -> None
             INSERT INTO cv_versions (profile_id, version_name, cv_json, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?)
             """,
-            (row[2], "Portfolio link refresh - September 2026", json.dumps(seed_cv, ensure_ascii=False), now, now),
+            (row[2], "Referees refresh - September 2026", json.dumps(seed_cv, ensure_ascii=False), now, now),
         )
 
 

@@ -5,7 +5,7 @@ def default_cv_data() -> dict:
      'phone': '+254792950816',
      'email': 'mutisyaboniface@outlook.com',
      'linkedin': 'https://www.linkedin.com/in/bonifacengila254/',
-     'github': 'https://github.com/Bontetish',
+     'github': 'https://github.com/BonifaceNgila',
      'website': 'https://potfolio-bonfacengila.streamlit.app/',
      'profile_summary': 'IT security and systems development professional with nearly five years of '
                         'progressive experience across Plan International Kenya and TechnoServe. '
@@ -213,7 +213,12 @@ def default_cv_data() -> dict:
                    'technologies': 'Mistral, FastAPI, Streamlit, Ollama',
                    'link': 'https://github.com/BonifaceNgila/sentiment-analyzer-mistral'}],
      'languages': ['English (Fluent)', 'Swahili (Native)'],
-     'referees': [{'name': 'Winfred Mukonza',
+     'referees': [{'name': 'Irene Mureithi',
+                   'organization': 'TechnoServe Kenya - BlueBiz Programme',
+                   'position': 'Digital Associate',
+                   'email': 'imureithi@tns.org',
+                   'phone': '07122241233'},
+                  {'name': 'Winfred Mukonza',
                    'organization': 'Plan International Kenya',
                    'position': 'Country Sponsorship Manager',
                    'email': 'winfred.mukonza@plan-international.org',
