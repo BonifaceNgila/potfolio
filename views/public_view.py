@@ -108,7 +108,7 @@ def render_portfolio_landing(cv: dict) -> None:
 
     experience_html = ""
     for item in experience:
-        bullets = "".join(f"<li>{_e(bullet)}</li>" for bullet in item.get("bullets", [])[:4])
+        bullets = "".join(f"<li>{_e(bullet)}</li>" for bullet in item.get("bullets", []))
         experience_html += f"""
         <article class='timeline-item'>
             <div>
