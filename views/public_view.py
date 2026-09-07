@@ -448,6 +448,9 @@ def render_portfolio_landing(cv: dict) -> None:
                 #101820;
             color: #ffffff;
             border: 1px solid rgba(85, 230, 208, 0.24);
+            position: sticky;
+            top: 24px;
+            align-self: start;
         }}
         .skills-panel h3 {{
             margin: 0 0 14px;
