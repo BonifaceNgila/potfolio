@@ -68,11 +68,11 @@ def render_portfolio_landing(cv: dict) -> None:
     role_cards = [
         (
             "IAM & Access Governance",
-            "Identity lifecycle, SSO, MFA, Active Directory, Entra ID concepts, OKTA, OCI IAM, access troubleshooting.",
+            "Identity lifecycle, Active Directory, Azure AD and Okta; least privilege, access troubleshooting and security governance.",
         ),
         (
             "Full-Stack Web Development",
-            "PHP/MySQL systems, Python and JavaScript tooling, dashboards, role-based workflows, and practical data management platforms.",
+            "PHP and Laravel, React and TypeScript, Node.js and Express, MySQL, secure CMS platforms and operational tools.",
         ),
         (
             "Cloud Architecture & DevOps",
@@ -94,8 +94,8 @@ def render_portfolio_landing(cv: dict) -> None:
     )
 
     stats = [
-        ("4+ years", "IT service delivery across NGO operations"),
-        ("3 roles", "progressive growth at Plan International Kenya"),
+        ("Nearly 5 years", "technology experience in international development"),
+        (str(len(experience)), "roles across technology and digital inclusion"),
         (str(len(certifications)), "professional certifications and courses"),
         (str(len(projects)), "portfolio projects and operational tools"),
     ]
@@ -107,7 +107,7 @@ def render_portfolio_landing(cv: dict) -> None:
     skills_html = "".join(f"<li>{_e(item)}</li>" for item in competencies[:8])
 
     experience_html = ""
-    for item in experience[:3]:
+    for item in experience:
         bullets = "".join(f"<li>{_e(bullet)}</li>" for bullet in item.get("bullets", [])[:4])
         experience_html += f"""
         <article class='timeline-item'>
@@ -125,7 +125,7 @@ def render_portfolio_landing(cv: dict) -> None:
         tech = _e(item.get("technologies", ""))
         link = _e(item.get("link", ""))
         link_html = (
-            f"<a class='project-link' href='{link}' target='_blank' rel='noreferrer'>View Repository</a>"
+            f"<a class='project-link' href='{link}' target='_blank' rel='noreferrer'>Explore Project</a>"
             if link else ""
         )
         project_html += f"""
@@ -557,8 +557,33 @@ def render_portfolio_landing(cv: dict) -> None:
                 grid-template-columns: 1fr;
             }}
         }}
+
+        html {{ scroll-behavior: smooth; }}
+        .pf-wrap {{ background: #f5f7f8; }}
+        .site-nav {{ background: #0b1920; flex-wrap: wrap; gap: 16px; padding: 20px clamp(20px, 5vw, 72px); }}
+        .pf-hero {{ min-height: 620px; padding: clamp(28px, 6vw, 88px); border-radius: 0; align-items: center; }}
+        .pf-name {{ font-size: clamp(38px, 5.5vw, 76px); letter-spacing: -0.045em; text-transform: none; }}
+        .pf-headline {{ line-height: 1.4; }}
+        .pf-summary {{ max-width: 680px; line-height: 1.8; }}
+        .section {{ padding: 64px clamp(20px, 5vw, 72px); }}
+        .section-head h2 {{ letter-spacing: -0.035em; }}
+        .role-card, .project-card, .proof-item {{ border-radius: 16px; box-shadow: 0 8px 28px #10252f08; }}
+        .project-card {{ display: flex; flex-direction: column; padding: 28px; border-top: 3px solid #167c70; }}
+        .project-card p {{ flex: 1; }}
+        .project-card a {{ color: #12665e; font-weight: 700; margin-top: 18px; }}
+        .pf-wrap a:focus-visible {{ outline: 3px solid #e5a63e; outline-offset: 5px; }}
+        .pf-wrap section {{ scroll-margin-top: 24px; }}
+        @media (max-width: 760px) {{
+            .pf-hero, .evidence-grid, .proof-wrap {{ grid-template-columns: 1fr; }}
+            .nav-links {{ display: flex; flex-wrap: wrap; gap: 16px; }}
+            .pf-hero {{ min-height: auto; }}
+            .contact-panel {{ min-width: 0; }}
+            .stats-band {{ grid-template-columns: repeat(2, minmax(0, 1fr)); }}
+            .roles-grid, .projects-grid {{ grid-template-columns: 1fr; }}
+        }}
+        @media (prefers-reduced-motion: reduce) {{ html {{ scroll-behavior: auto; }} }}
     </style>
-    <div class='pf-wrap'>
+    <div class='pf-wrap' id='top'>
         <nav class='site-nav'>
             <a class='brand' href='#top'>
                 <span class='brand-mark'>BN</span>
@@ -568,19 +593,19 @@ def render_portfolio_landing(cv: dict) -> None:
                 <a href='#roles'>Roles</a>
                 <a href='#experience'>Experience</a>
                 <a href='#projects'>Projects</a>
-                <a href='#proof'>Proof</a>
+                <a href='#proof'>Education</a>
                 <a href='mailto:{email_val}'>Contact</a>
             </div>
         </nav>
         <div class='pf-hero'>
             <div>
-                <p class='eyebrow'>Portfolio for IT, IAM, Cloud, Security, and Service Delivery Roles</p>
+                <p class='eyebrow'>Secure systems. Useful software. Inclusive technology.</p>
                 <h1 class='pf-name'>{full_name}</h1>
                 <h2 class='pf-headline'>{headline}</h2>
                 <p class='pf-summary'>{summary}</p>
                 <div class='pf-actions'>
                     <a class='pf-button primary' href='mailto:{email_val}'>Contact Me</a>
-                    <a class='pf-button' href='{linkedin}' target='_blank' rel='noreferrer'>View LinkedIn</a>
+                    <a class='pf-button' href='#projects'>Explore My Work</a><a class='pf-button' href='{linkedin}' target='_blank' rel='noreferrer'>View LinkedIn</a>
                     <a class='pf-button' href='{github}' target='_blank' rel='noreferrer'>View GitHub</a>
                 </div>
             </div>
@@ -601,21 +626,21 @@ def render_portfolio_landing(cv: dict) -> None:
 
         <section class='section tech-band' id='roles'>
             <div class='section-head'>
-                <h2>Role Fit</h2>
-                <p>Targeted strengths mapped from your CV, certifications, project work, and progressive IT experience.</p>
+                <h2>What I Do</h2>
+                <p>From everyday IT operations to applications that help teams work better.</p>
             </div>
             <div class='roles-grid'>{role_cards_html}</div>
         </section>
 
         <section class='section alt' id='experience'>
             <div class='section-head'>
-                <h2>Experience Evidence</h2>
+                <h2>Professional Experience</h2>
                 <p>Recent roles show delivery across infrastructure operations, access management, user support, governance, and service improvement.</p>
             </div>
             <div class='evidence-grid'>
                 <div class='timeline'>{experience_html}</div>
                 <aside class='skills-panel'>
-                    <h3>Core Capability Stack</h3>
+                    <h3>Technical Skills</h3>
                     <ul>{skills_html}</ul>
                 </aside>
             </div>
@@ -631,7 +656,7 @@ def render_portfolio_landing(cv: dict) -> None:
 
         <section class='section alt' id='proof'>
             <div class='section-head'>
-                <h2>Academic & Professional Proof</h2>
+                <h2>Education & Certifications</h2>
                 <p>Formal education and certifications supporting technical breadth, security awareness, cloud capability, and ongoing growth.</p>
             </div>
             <div class='proof-wrap'>
@@ -646,7 +671,7 @@ def render_portfolio_landing(cv: dict) -> None:
 
         <section class='closing-band'>
             <div>
-                <h2>Available for roles where secure, reliable IT delivery matters.</h2>
+                <h2>Let's build technology that works for people.</h2>
                 <p>Best matched to IAM, IT operations, cloud support, service desk coordination, systems administration, and security-focused technology roles.</p>
             </div>
             <a class='pf-button primary' href='mailto:{email_val}'>Start a Conversation</a>
@@ -654,7 +679,7 @@ def render_portfolio_landing(cv: dict) -> None:
     </div>
     """
 
-    st.components.v1.html(landing_html, height=3100, scrolling=True)
+    st.html(landing_html)
 
 
 def download_section(cv: dict, suggested_name: str, template: str) -> None:

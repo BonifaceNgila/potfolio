@@ -101,6 +101,8 @@ if not default_version:
 
 if not admin_mode:
     render_portfolio_landing(default_version["cv"])
+    with st.container(border=True):
+        download_section(default_version["cv"], "Boniface_Ngila_CV", "One Column - Classic")
     st.markdown(
         """
         <footer class="portfolio-footer">

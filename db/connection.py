@@ -105,10 +105,13 @@ def _default_cv_is_stale(current_cv: dict, seed_cv: dict) -> bool:
 
 
 def _sync_default_profile_from_local_seed(cur: sqlite3.Cursor, now: str) -> None:
+    cur.execute("SELECT 1 FROM cv_versions WHERE version_name = ? LIMIT 1", ("Attached CV refresh - September 2026",))
+    if cur.fetchone():
+        return
     seed_cv = default_cv_data()
     cur.execute(
         """
-        SELECT v.id, v.cv_json
+        SELECT v.id, v.cv_json, v.profile_id
         FROM cv_versions v
         JOIN profiles p ON p.id = v.profile_id
         WHERE p.is_default = 1
@@ -125,14 +128,13 @@ def _sync_default_profile_from_local_seed(cur: sqlite3.Cursor, now: str) -> None
     except (TypeError, json.JSONDecodeError):
         current_cv = {}
 
-    if _default_cv_is_stale(current_cv, seed_cv):
+    if current_cv != seed_cv:
         cur.execute(
             """
-            UPDATE cv_versions
-            SET cv_json = ?, updated_at = ?
-            WHERE id = ?
+            INSERT INTO cv_versions (profile_id, version_name, cv_json, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?)
             """,
-            (json.dumps(seed_cv, ensure_ascii=False), now, row[0]),
+            (row[2], "Attached CV refresh - September 2026", json.dumps(seed_cv, ensure_ascii=False), now, now),
         )
 
 
