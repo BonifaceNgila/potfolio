@@ -635,7 +635,6 @@ def render_portfolio_landing(cv: dict) -> None:
         <section class='section alt' id='experience'>
             <div class='section-head'>
                 <h2>Professional Experience</h2>
-                <p>Recent roles show delivery across infrastructure operations, access management, user support, governance, and service improvement.</p>
             </div>
             <div class='evidence-grid'>
                 <div class='timeline'>{experience_html}</div>
