@@ -60,6 +60,7 @@ def _build_contact_fields(cv: dict) -> list[tuple[str, str]]:
         ("Email", cv.get("email", "")),
         ("LinkedIn", cv.get("linkedin", "")),
         ("GitHub", cv.get("github", "")),
+        ("Portfolio", cv.get("website", "")),
     ]
     return [(label, str(value).strip()) for label, value in fields if str(value).strip()]
 
@@ -977,6 +978,7 @@ def build_pdf_two_column(cv: dict, theme: dict | None = None) -> bytes:
         add_contact_line("Email", cv.get("email", ""))
         add_contact_line("LinkedIn", cv.get("linkedin", ""))
         add_contact_line("GitHub", cv.get("github", ""))
+        add_contact_line("Portfolio", cv.get("website", ""))
         _add_gap_op(right_ops, 6)
     elif layout_style in ("professional_header", "sidebar_skillset"):
         # Hero/sidebar header shows Location/Phone/Email; LinkedIn/GitHub now

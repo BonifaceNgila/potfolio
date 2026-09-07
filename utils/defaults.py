@@ -6,6 +6,7 @@ def default_cv_data() -> dict:
      'email': 'mutisyaboniface@outlook.com',
      'linkedin': 'https://www.linkedin.com/in/bonifacengila254/',
      'github': 'https://github.com/Bontetish',
+     'website': 'https://potfolio-bonfacengila.streamlit.app/',
      'profile_summary': 'IT security and systems development professional with nearly five years of '
                         'progressive experience across Plan International Kenya and TechnoServe. '
                         'Builds and supports secure, data-driven applications and automation using '

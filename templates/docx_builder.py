@@ -103,6 +103,8 @@ def build_docx(cv: dict, template: str) -> bytes:
         contact_parts.append(("LinkedIn", cv.get("linkedin")))
     if cv.get("github"):
         contact_parts.append(("GitHub", cv.get("github")))
+    if cv.get("website"):
+        contact_parts.append(("Portfolio", cv.get("website")))
 
     if contact_parts:
         table = doc.add_table(rows=0, cols=2)

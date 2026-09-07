@@ -14,11 +14,14 @@ def build_html(cv: dict, template: str) -> str:
     )
     linkedin_url = cv.get('linkedin', '').strip()
     github_url = cv.get('github', '').strip()
+    website_url = cv.get('website', '').strip()
     link_items = []
     if linkedin_url:
         link_items.append(f"<a href='{html.escape(linkedin_url)}'>LinkedIn</a>")
     if github_url:
         link_items.append(f"<a href='{html.escape(github_url)}'>GitHub</a>")
+    if website_url:
+        link_items.append(f"<a href='{html.escape(website_url)}'>Portfolio</a>")
     links = f"<p>{' | '.join(link_items)}</p>" if link_items else ""
 
     profile_section = section_header("Profile") + f"<p>{profile}</p>"
