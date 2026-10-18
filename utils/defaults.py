@@ -15,7 +15,8 @@ def default_cv_data() -> dict:
                         'full-stack delivery with hands-on cybersecurity, identity and access '
                         'management, infrastructure security, patching, incident response, business '
                         'continuity, data protection, user awareness, and service management in '
-                        'multi-site international development environments. Holds an MSc in Computer '
+                        'multi-site international development environments, including digital learning, '
+                        'partner enablement, programme reporting, and systems integration. Holds an MSc in Computer '
                         "Science and a Bachelor's degree in Business Information Technology, with "
                         'cloud, Kubernetes, data-protection, and ISO/IEC 42001 credentials.',
      'core_competencies': ['Software engineering: PHP 8.2, Laravel, MySQL, Node.js, Express, React, '
@@ -38,37 +39,43 @@ def default_cv_data() -> dict:
      'experience': [{'role': 'DIGITAL INCLUSION INTERN',
                      'organization': 'TechnoServe Kenya - BlueBiz Programme',
                      'period': 'June 2026 - Present',
-                     'bullets': ['Manage day-to-day administration of digital learning platforms, '
-                                 'supporting enrolment, access, and progress tracking for '
-                                 'approximately 560 Tier 1 learners on TalentLMS across a 40-video '
-                                 'bilingual curriculum.',
-                                 'Designed the Partner Digital Posture Checklist, adopted across all '
-                                 'six Cohort IV partner organisations as a common baseline for digital '
-                                 'readiness, information-security practices, risk identification, and '
-                                 'targeted support.',
-                                 'Led AI implementation and adoption training for five partner '
-                                 'organisations, translating Gemini Gems and NotebookLM into practical '
-                                 'workflows for report standardisation and responsible information '
-                                 'handling.',
-                                 'Built a centralised bilingual evaluation and reporting system using '
-                                 'Google Forms and a consolidated workbook, with automated dashboards '
-                                 'tracking adoption, usability, and applicability against baseline '
-                                 'scores.',
-                                 'Led the programme website revamp and CMS implementation, translating '
-                                 'requirements into a database-driven solution and producing the '
-                                 'deployment blueprint for secure go-live and operational handover.',
-                                 'Authored the Product Optimization Toolkit dissemination strategy '
-                                 'across LMS delivery, WhatsApp delivery targeting 3,500-5,000 '
-                                 'participants, and open-access publishing; also produced a reusable '
-                                 'video-production standard.',
-                                 'Evaluated Learn.ink as a mobile-first LMS alternative, led vendor '
-                                 'engagement, and prepared the comparative assessment used to inform '
-                                 'the platform decision.',
-                                 'Mapped 104 WhatsApp groups across six partner communities and more '
-                                 'than 1,900 members, establishing a reliable baseline for digital '
-                                 'dissemination reporting.',
-                                 'Produce bilingual participant notices, learning materials, and '
-                                 'digital campaign assets in English and Kiswahili.']},
+                     'bullets': ['Administer the BlueBiz programme’s TalentLMS environment end to end: '
+                                 'structure courses and modules, configure quizzes and scheduled '
+                                 'content releases, and update and localise the digitised '
+                                 'entrepreneurship curriculum in English and Kiswahili for new value '
+                                 'chains. Manage enrolment and bulk onboarding, validate learner '
+                                 'records, resolve account and login issues through closure, and '
+                                 'report learner progress and completion.',
+                                 'Lead development and revamp of the programme website and content '
+                                 'management system through go-live. Implement role-based '
+                                 'administrative access, authentication, password recovery, activity '
+                                 'logging, transactional email, automated backups and scheduled '
+                                 'reporting. Integrate the website with TalentLMS and add survey, SMS '
+                                 'and communications capabilities; prepare the deployment blueprint, '
+                                 'go-live readiness checklist and handover documentation.',
+                                 'Support partner organisations and digital trainers across coastal '
+                                 'counties through tool onboarding and day-to-day troubleshooting. '
+                                 'Develop weekly reporting templates and a consolidated participant '
+                                 'tracker, refining both based on partner feedback. Co-facilitate AI '
+                                 'adoption and usage training and coordinate follow-up on submissions, '
+                                 'schedules and data requests.',
+                                 'Produce and distribute learning materials through TalentLMS, '
+                                 'WhatsApp communities and YouTube on cybersecurity, digital '
+                                 'marketing, artificial intelligence and digital entrepreneurship. '
+                                 'Create learner-facing materials, explainer videos, course imagery '
+                                 'and campaign banners aligned with programme brand guidelines; '
+                                 'maintain the content calendar and track engagement.',
+                                 'Clean, reconcile and standardise participant datasets from '
+                                 'multiple sources; automate recurring spreadsheet tasks; build '
+                                 'reporting dashboards that replace manual compilation; and analyse '
+                                 'training feedback for programme action. Maintain the departmental '
+                                 'workplan and report progress against activities and milestones.',
+                                 'Support the digitisation strategy, implementation roadmap and '
+                                 'priority digital solutions register. Assess existing systems for '
+                                 'gaps and integration opportunities, review and update value chain '
+                                 'case studies, workbooks and application materials, and document '
+                                 'processes, configurations and procedures for continuity after '
+                                 'handover.']},
                     {'role': 'INFORMATION TECHNOLOGY OFFICER',
                      'organization': 'Plan International Kenya',
                      'period': 'March 2024 - December 2025',
@@ -97,7 +104,7 @@ def default_cv_data() -> dict:
                                  'and proposed automation and control improvements.']},
                     {'role': 'INFORMATION TECHNOLOGY ASSISTANT',
                      'organization': 'Plan International Kenya',
-                     'period': 'November 2022 - March 2024',
+                     'period': 'November 2022 - February 2024',
                      'bullets': ['Provided first-line support for desktops, networks, IT '
                                  'infrastructure, LAN, and internet connectivity; performed system '
                                  'upgrades, patching, and backups and escalated incidents when '
@@ -143,7 +150,7 @@ def default_cv_data() -> dict:
                    {'course': 'Bachelor of Business Information Technology',
                     'institution': 'Taita Taveta University',
                     'timeline': 'November 2019 | Second Class Honours Lower Division'}],
-     'certifications': ['ISO/IEC 42001:2023 Lead Implementer - ICDFA (2026)',
+     'certifications': ['ISO/IEC 42001:2023 Lead Auditor - ICDFA (2026)',
                         'Kubernetes and Cloud Native Associate - Cloud Native Computing Foundation '
                         '(2026)',
                         'OCI 2025 Certified DevOps Professional - Oracle University (2025)',
