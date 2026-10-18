@@ -182,10 +182,13 @@ def default_cv_data() -> dict:
                                   'tested migration workflows.',
                    'link': ''},
                   {'name': 'CV Builder Platform',
-                   'description': 'A local development project for creating and managing CVs with '
-                                  'React and Laravel. Includes account access, CV editing, templates '
-                                  'and export implementations; login and template loading verified '
-                                  'locally.',
+                   'description': 'Built a full-stack CV builder with a React interface and Laravel '
+                                  'API. Implemented account registration and authentication, CV '
+                                  'creation and editing, reusable templates, version history, and '
+                                  'PDF, DOCX, and HTML export workflows. The API also includes '
+                                  'AI-assisted content suggestions and phrasing improvements. '
+                                  'Login and template loading were verified in the local '
+                                  'development environment; public deployment is not claimed.',
                    'technologies': 'React, Laravel 10, PHP, MySQL, Vite',
                    'link': ''},
                   {'name': 'Asset Lifecycle Management System',
