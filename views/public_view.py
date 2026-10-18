@@ -123,9 +123,11 @@ def render_portfolio_landing(cv: dict) -> None:
     project_html = ""
     for item in projects:
         tech = _e(item.get("technologies", ""))
-        link = _e(item.get("link", ""))
+        project_link = str(item.get("link", "") or "").strip()
+        link = _e(project_link or cv.get("github", ""))
+        link_label = "Explore Project" if project_link else "View GitHub Profile"
         link_html = (
-            f"<a class='project-link' href='{link}' target='_blank' rel='noreferrer'>Explore Project</a>"
+            f"<a class='project-link' href='{link}' target='_blank' rel='noreferrer'>{link_label}</a>"
             if link else ""
         )
         project_html += f"""

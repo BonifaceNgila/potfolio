@@ -125,6 +125,71 @@ def _draw_contact_blocks(
     return y
 
 
+def _measure_contact_grid_height(
+    contact_fields: list[tuple[str, str]],
+    column_width: float,
+    label_font_size: int,
+    value_font_size: int,
+    value_leading: int,
+    row_gap: int = 6,
+) -> int:
+    total_height = 0
+    for index in range(0, len(contact_fields), 2):
+        row_value_height = max(
+            value_leading,
+            *(
+                _measure_wrapped_text_height(value, "Helvetica", value_font_size, column_width, value_leading)
+                for _, value in contact_fields[index:index + 2]
+            ),
+        )
+        total_height += label_font_size + 3 + row_value_height + row_gap
+    return total_height
+
+
+def _draw_contact_grid(
+    pdf,
+    contact_fields: list[tuple[str, str]],
+    x: float,
+    y: float,
+    total_width: float,
+    label_font_size: int,
+    value_font_size: int,
+    value_leading: int,
+    label_color,
+    value_color,
+    row_gap: int = 6,
+) -> float:
+    column_gap = 18
+    column_width = (total_width - column_gap) / 2
+    for index in range(0, len(contact_fields), 2):
+        row_fields = contact_fields[index:index + 2]
+        row_value_height = max(
+            value_leading,
+            *(
+                _measure_wrapped_text_height(value, "Helvetica", value_font_size, column_width, value_leading)
+                for _, value in row_fields
+            ),
+        )
+        for column, (label, value) in enumerate(row_fields):
+            field_x = x + column * (column_width + column_gap)
+            pdf.setFillColor(label_color)
+            pdf.setFont("Helvetica-Bold", label_font_size)
+            pdf.drawString(field_x, y, pdf_safe_text(label.upper()))
+            _draw_wrapped_lines(
+                pdf,
+                value,
+                field_x,
+                y - label_font_size - 3,
+                column_width,
+                "Helvetica",
+                value_font_size,
+                value_leading,
+                fill_color=value_color,
+            )
+        y -= label_font_size + 3 + row_value_height + row_gap
+    return y
+
+
 def build_pdf(cv: dict, template: str) -> bytes:
     if not REPORTLAB_AVAILABLE:
         return b""
@@ -170,13 +235,18 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
     buffer = BytesIO()
     pdf = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
-    left = 28
-    right = width - 28
+    left = 36
+    right = width - 36
     content_width = right - left
-    top = height - 34
-    bottom = 28
+    top = height - 38
+    bottom = 36
     y = top
     on_new_page_callback = None
+
+    def draw_page_footer() -> None:
+        pdf.setFillColor(colors.HexColor("#64748b"))
+        pdf.setFont("Helvetica", 8)
+        pdf.drawRightString(right, 16, f"Page {pdf.getPageNumber()}")
 
     if layout_style == "minimal_clean":
         def draw_minimal_frame() -> None:
@@ -187,10 +257,12 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
 
         def on_minimal_new_page() -> float:
             draw_minimal_frame()
+            draw_page_footer()
             pdf.setFillColor(text_color)
             return top - 6
 
         draw_minimal_frame()
+        draw_page_footer()
         header_width = content_width - 8
         y = _draw_wrapped_lines(
             pdf,
@@ -241,8 +313,8 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
             ribbon_bottom = top - ribbon_height
             pdf.setFillColor(hero_background)
             safe_round_rect(pdf, left - 12, ribbon_bottom, content_width + 24, ribbon_height, 10, fill=1, stroke=0)
-            pdf.setFillColor(hero_accent)
-            pdf.rect(left, ribbon_bottom + 5, content_width * 0.56, ribbon_height - 10, fill=1, stroke=0)
+            pdf.setFillColor(hero_strip)
+            pdf.rect(left, ribbon_bottom + 5, 4, ribbon_height - 10, fill=1, stroke=0)
 
             y_start = ribbon_bottom - 16
             pdf.setFillColor(panel_primary)
@@ -250,13 +322,15 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
             pdf.setStrokeColor(border_color)
             pdf.setLineWidth(1)
             pdf.rect(left - 12, bottom - 6, content_width + 24, y_start - bottom + 24, fill=0, stroke=1)
+            draw_page_footer()
             pdf.setFillColor(text_color)
             return y_start - 8
 
         pdf.setFillColor(background)
         pdf.rect(0, 0, width, height, fill=1, stroke=0)
+        draw_page_footer()
         meta_width = min(max(content_width * header_meta_ratio, 150), content_width * 0.42)
-        left_header_width = content_width - meta_width - 24
+        left_header_width = content_width
         name_leading = header_name_font_size + 4
         headline_leading = header_headline_font_size + 4
         left_header_height = _measure_wrapped_text_height(
@@ -274,26 +348,25 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
                 left_header_width,
                 headline_leading,
             )
-        meta_header_height = _measure_contact_blocks_height(
+        meta_header_height = _measure_contact_grid_height(
             contact_fields,
-            meta_width,
+            (content_width - 18) / 2,
             header_contact_label_font_size,
             header_contact_font_size,
             header_contact_leading,
         )
-        hero_height = max(header_min_height, max(left_header_height, meta_header_height) + 36)
+        header_spacing = 30 if contact_fields else 36
+        hero_height = max(header_min_height, left_header_height + meta_header_height + header_spacing)
         hero_bottom = y - hero_height
         pdf.setFillColor(hero_background)
         safe_round_rect(pdf, left - 16, hero_bottom - 8, content_width + 32, hero_height + 16, 20, fill=1, stroke=0)
         pdf.setFillColor(hero_accent)
-        accent_height = min(max(left_header_height + 18, 42), hero_height * 0.6)
-        accent_y = hero_bottom + ((hero_height - accent_height) / 2)
-        pdf.rect(left, accent_y, min(content_width * 0.68, left_header_width + 22), accent_height, fill=1, stroke=0)
+        pdf.rect(left, hero_bottom + 14, 4, hero_height - 28, fill=1, stroke=0)
         text_y = hero_bottom + hero_height - 24
         text_y = _draw_wrapped_lines(
             pdf,
             cv.get("full_name", ""),
-            left + 8,
+            left + 12,
             text_y,
             left_header_width,
             "Helvetica-Bold",
@@ -302,10 +375,10 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
             fill_color=hero_text_color,
         )
         text_y -= 6
-        _draw_wrapped_lines(
+        text_y = _draw_wrapped_lines(
             pdf,
             cv.get("headline", ""),
-            left + 8,
+            left + 12,
             text_y,
             left_header_width,
             "Helvetica",
@@ -313,18 +386,19 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
             headline_leading,
             fill_color=hero_text_color,
         )
-        _draw_contact_blocks(
-            pdf,
-            contact_fields,
-            right - meta_width,
-            hero_bottom + hero_height - 18,
-            meta_width,
-            header_contact_label_font_size,
-            header_contact_font_size,
-            header_contact_leading,
-            link_color,
-            hero_text_color,
-        )
+        if contact_fields:
+            _draw_contact_grid(
+                pdf,
+                contact_fields,
+                left + 12,
+                text_y - 8,
+                content_width - 24,
+                header_contact_label_font_size,
+                header_contact_font_size,
+                header_contact_leading,
+                link_color,
+                hero_text_color,
+            )
         y = hero_bottom - 18
         pdf.setFillColor(panel_primary)
         pdf.rect(left - 12, bottom - 6, content_width + 24, y - bottom + 24, fill=1, stroke=0)
@@ -366,7 +440,7 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
             )
             for bullet in exp.get("bullets") or []:
                 y = draw_pdf_wrapped_text(pdf, f"  - {bullet}", left, y, content_width, bottom, top, on_new_page=on_new_page_callback)
-            y -= 3
+            y -= 7
 
     def _projects():
         nonlocal y
@@ -375,7 +449,21 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
             name = record.get("name", "")
             description = record.get("description", "")
             technologies = record.get("technologies", "")
-            link = record.get("link", "")
+            link = str(record.get("link", "") or "").strip()
+            link_is_fallback = not link
+            if link_is_fallback:
+                link = str(cv.get("github", "") or "").strip()
+            link_line = f"GitHub profile: {link}" if link and link_is_fallback else link
+            estimated_height = (
+                _measure_wrapped_text_height(name, "Helvetica-Bold", 10, content_width, 13)
+                + _measure_wrapped_text_height(description, "Helvetica", 10, content_width, 13)
+                + _measure_wrapped_text_height(f"  Technologies: {technologies}" if technologies else "", "Helvetica-Oblique", 9, content_width, 12)
+                + _measure_wrapped_text_height(link_line, "Helvetica-Oblique", 9, content_width, 12)
+                + 6
+            )
+            if y - estimated_height < bottom and callable(on_new_page_callback):
+                pdf.showPage()
+                y = on_new_page_callback()
             if name:
                 y = draw_pdf_wrapped_text(pdf, name, left, y, content_width, bottom, top, font_name="Helvetica-Bold", font_size=10, leading=13, on_new_page=on_new_page_callback)
             if description:
@@ -383,8 +471,8 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
             if technologies:
                 y = draw_pdf_wrapped_text(pdf, f"  Technologies: {technologies}", left, y, content_width, bottom, top, font_name="Helvetica-Oblique", font_size=9, leading=12, on_new_page=on_new_page_callback)
             if link:
-                y = draw_pdf_wrapped_text(pdf, f"  {link}", left, y, content_width, bottom, top, font_name="Helvetica-Oblique", font_size=9, leading=12, on_new_page=on_new_page_callback)
-            y -= 3
+                y = draw_pdf_wrapped_text(pdf, f"  {link_line}", left, y, content_width, bottom, top, font_name="Helvetica-Oblique", font_size=9, leading=12, on_new_page=on_new_page_callback)
+            y -= 6
 
     def _education():
         nonlocal y
@@ -420,7 +508,21 @@ def build_pdf_one_column(cv: dict, theme: dict | None = None) -> bytes:
     _draw_section("Profile", _profile)
     _draw_section("Core Competencies", _competencies)
     _draw_section("Professional Experience", _experience)
-    y = ensure_pdf_space(pdf, y, 36, bottom, top, on_new_page=on_new_page_callback)
+    first_project_height = 0
+    project_items = cv.get("projects") or []
+    if project_items:
+        first_project = normalize_project_record(project_items[0])
+        first_project_link = str(first_project.get("link", "") or "").strip()
+        if not first_project_link and cv.get("github"):
+            first_project_link = f"GitHub profile: {cv['github']}"
+        first_project_height = (
+            _measure_wrapped_text_height(first_project.get("name", ""), "Helvetica-Bold", 10, content_width, 13)
+            + _measure_wrapped_text_height(first_project.get("description", ""), "Helvetica", 10, content_width, 13)
+            + _measure_wrapped_text_height(f"  Technologies: {first_project.get('technologies', '')}" if first_project.get("technologies") else "", "Helvetica-Oblique", 9, content_width, 12)
+            + _measure_wrapped_text_height(first_project_link, "Helvetica-Oblique", 9, content_width, 12)
+            + 6
+        )
+    y = ensure_pdf_space(pdf, y, 36 + first_project_height, bottom, top, on_new_page=on_new_page_callback)
     y = draw_pdf_section_title(pdf, "Projects", left, y, title_color=section_title_color, line_color=section_line_color)
     pdf.setFillColor(text_color)
     _projects()
